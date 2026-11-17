@@ -1,0 +1,896 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Official Profile</title>
+
+<style>
+:root {
+    --navy:#101c32;
+    --navy2:#172943;
+    --gold:#d6ad62;
+    --white:#fff;
+    --light:#f4f6fa;
+    --text:#263348;
+    --muted:#8993a3;
+}
+
+* {
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html { scroll-behavior:smooth; }
+
+body {
+    font-family:Arial,sans-serif;
+    background:var(--light);
+    color:var(--text);
+    line-height:1.7;
+}
+
+header {
+    background:var(--navy);
+    color:white;
+    padding:18px 7%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    z-index:100;
+    border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.logo {
+    font-size:19px;
+    font-weight:bold;
+}
+
+.logo span { color:var(--gold); }
+
+nav {
+    display:flex;
+    gap:25px;
+}
+
+nav a {
+    color:#dce2ec;
+    text-decoration:none;
+    font-size:13px;
+}
+
+nav a:hover { color:var(--gold); }
+
+.menu {
+    display:none;
+    color:white;
+    font-size:27px;
+    cursor:pointer;
+}
+
+.hero {
+    background:
+    linear-gradient(110deg,rgba(12,24,44,.98),rgba(18,39,65,.88)),
+    url("https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1800&q=85");
+    background-size:cover;
+    background-position:center;
+    color:white;
+    min-height:570px;
+    padding:100px 8%;
+    display:flex;
+    align-items:center;
+}
+
+.hero-content { max-width:720px; }
+
+.tag {
+    color:var(--gold);
+    text-transform:uppercase;
+    letter-spacing:3px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.hero h1 {
+    font-size:clamp(37px,6vw,65px);
+    line-height:1.12;
+    margin:22px 0;
+}
+
+.hero h1 span { color:var(--gold); }
+
+.hero p {
+    color:#d3dce8;
+    max-width:590px;
+    font-size:16px;
+}
+
+.hero-buttons {
+    margin-top:32px;
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+}
+
+.btn {
+    padding:13px 24px;
+    text-decoration:none;
+    border-radius:5px;
+    font-size:13px;
+    font-weight:bold;
+    display:inline-block;
+    cursor:pointer;
+    border:0;
+}
+
+.primary {
+    background:var(--gold);
+    color:var(--navy);
+}
+
+.secondary {
+    border:1px solid rgba(255,255,255,.5);
+    color:white;
+    background:transparent;
+}
+
+.proceed-btn {
+    background:white;
+    color:var(--navy);
+    border:1px solid var(--gold);
+}
+
+section { padding:80px 8%; }
+
+.section-heading { margin-bottom:38px; }
+
+.section-heading small {
+    color:#b18a45;
+    letter-spacing:3px;
+    font-weight:bold;
+    font-size:11px;
+}
+
+.section-heading h2 {
+    color:var(--navy);
+    font-size:32px;
+    margin-top:7px;
+}
+
+.about { background:white; }
+
+.about-grid {
+    display:grid;
+    grid-template-columns:1fr 1.3fr;
+    gap:55px;
+    align-items:center;
+}
+
+.about-visual {
+    background:var(--navy);
+    min-height:350px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    position:relative;
+    overflow:hidden;
+}
+
+.about-visual:before {
+    content:"";
+    position:absolute;
+    width:250px;
+    height:250px;
+    border:1px solid rgba(214,173,98,.3);
+    border-radius:50%;
+}
+
+.initials {
+    font-size:85px;
+    color:var(--gold);
+    font-family:Georgia,serif;
+    z-index:1;
+}
+
+.about-text h3 {
+    font-size:25px;
+    color:var(--navy);
+    margin-bottom:15px;
+}
+
+.about-text p {
+    color:#647084;
+    font-size:14px;
+    margin-bottom:16px;
+}
+
+.info {
+    margin-top:25px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.info div {
+    background:var(--light);
+    padding:15px;
+    border-radius:7px;
+}
+
+.info strong {
+    display:block;
+    color:var(--navy);
+    font-size:12px;
+}
+
+.info span {
+    color:#7d8796;
+    font-size:12px;
+}
+
+.education { background:var(--light); }
+
+.timeline {
+    max-width:850px;
+    border-left:2px solid var(--gold);
+    padding-left:28px;
+    margin-left:10px;
+}
+
+.timeline-item {
+    margin-bottom:30px;
+    position:relative;
+    background:white;
+    padding:23px;
+    border-radius:8px;
+}
+
+.timeline-item:before {
+    content:"";
+    width:12px;
+    height:12px;
+    background:var(--gold);
+    border-radius:50%;
+    position:absolute;
+    left:-35px;
+    top:29px;
+}
+
+.timeline-item h3 { color:var(--navy); }
+
+.timeline-item p {
+    color:#788394;
+    font-size:13px;
+}
+
+.expertise { background:white; }
+
+.skills-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+}
+
+.skill-card {
+    padding:27px;
+    background:#f7f8fa;
+    border:1px solid #edf0f4;
+    border-radius:9px;
+    transition:.3s;
+}
+
+.skill-card:hover {
+    transform:translateY(-5px);
+    border-color:var(--gold);
+}
+
+.skill-icon {
+    font-size:27px;
+    margin-bottom:17px;
+    color:#b18a45;
+}
+
+.skill-card h3 {
+    color:var(--navy);
+    font-size:17px;
+    margin-bottom:9px;
+}
+
+.skill-card p {
+    font-size:13px;
+    color:#7a8493;
+}
+
+.journey {
+    background:var(--navy);
+    color:white;
+}
+
+.journey .section-heading h2 { color:white; }
+
+.journey-content { max-width:800px; }
+
+.journey-content p {
+    color:#c5cedb;
+    font-size:15px;
+    margin-bottom:20px;
+}
+
+.journey-highlight {
+    border-left:3px solid var(--gold);
+    padding:20px 25px;
+    background:rgba(255,255,255,.06);
+    margin-top:30px;
+}
+
+.journey-highlight h3 { color:var(--gold); }
+
+.quote {
+    background:#f1ede4;
+    text-align:center;
+    padding:75px 10%;
+}
+
+.quote h2 {
+    color:var(--navy);
+    font-family:Georgia,serif;
+    font-size:clamp(23px,4vw,34px);
+    max-width:750px;
+    margin:auto;
+}
+
+.quote p {
+    color:#9a7942;
+    margin-top:20px;
+    font-size:12px;
+    letter-spacing:2px;
+}
+
+/* LEARNING HUB */
+
+#learningHub {
+    display:none;
+    min-height:100vh;
+    background:#f4f6fa;
+}
+
+.hub-hero {
+    background:linear-gradient(120deg,#101c32,#203b5d);
+    padding:75px 7% 85px;
+    color:white;
+    text-align:center;
+}
+
+.hub-hero small {
+    color:var(--gold);
+    letter-spacing:3px;
+    font-size:11px;
+    font-weight:bold;
+}
+
+.hub-hero h1 {
+    font-size:clamp(32px,5vw,48px);
+    margin:15px 0;
+}
+
+.hub-hero p {
+    color:#d0d9e5;
+    max-width:600px;
+    margin:auto;
+    font-size:14px;
+}
+
+.hub-content {
+    max-width:1100px;
+    margin:-35px auto 0;
+    padding:0 20px 75px;
+    position:relative;
+}
+
+.hub-heading {
+    text-align:center;
+    margin:50px 0 30px;
+}
+
+.hub-heading h2 {
+    color:var(--navy);
+    font-size:27px;
+}
+
+.hub-heading p {
+    color:#8290a1;
+    font-size:13px;
+    margin-top:5px;
+}
+
+.learning-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:22px;
+}
+
+.learning-card {
+    background:white;
+    border:1px solid #e8ebf0;
+    border-radius:13px;
+    overflow:hidden;
+    transition:.3s;
+    display:flex;
+    flex-direction:column;
+}
+
+.learning-card:hover {
+    transform:translateY(-7px);
+    box-shadow:0 15px 35px rgba(16,28,50,.10);
+}
+
+.card-top {
+    background:var(--navy);
+    min-height:150px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+}
+
+.card-top span {
+    font-size:53px;
+    color:var(--gold);
+}
+
+.card-body {
+    padding:24px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+.card-body small {
+    color:#b18a45;
+    letter-spacing:2px;
+    font-size:10px;
+    font-weight:bold;
+}
+
+.card-body h3 {
+    color:var(--navy);
+    font-size:21px;
+    margin:9px 0;
+}
+
+.card-body p {
+    color:#7a8595;
+    font-size:13px;
+    margin-bottom:22px;
+    flex:1;
+}
+
+.learn-btn {
+    display:block;
+    text-align:center;
+    padding:13px;
+    background:var(--navy);
+    color:white;
+    border-radius:5px;
+    text-decoration:none;
+    font-size:12px;
+    font-weight:bold;
+    transition:.3s;
+}
+
+.learn-btn:hover {
+    background:var(--gold);
+    color:var(--navy);
+}
+
+.back-btn {
+    display:inline-block;
+    margin-top:35px;
+    padding:12px 22px;
+    border:1px solid var(--gold);
+    color:var(--navy);
+    border-radius:5px;
+    background:white;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.hub-footer {
+    text-align:center;
+    background:#0b1526;
+    color:#b5c0ce;
+    padding:30px 15px;
+    font-size:12px;
+}
+
+.hub-footer strong { color:var(--gold); }
+
+footer {
+    background:#0b1526;
+    color:#b5c0ce;
+    text-align:center;
+    padding:35px 15px;
+    font-size:12px;
+}
+
+footer strong { color:var(--gold); }
+
+@media(max-width:800px) {
+    header { padding:16px 5%; }
+
+    .menu {
+        display:block;
+    }
+
+    nav {
+        display:none;
+        position:absolute;
+        top:65px;
+        left:0;
+        width:100%;
+        background:var(--navy);
+        flex-direction:column;
+        padding:22px 6%;
+        gap:18px;
+    }
+
+    nav.active { display:flex; }
+
+    .hero {
+        min-height:530px;
+        padding:75px 7%;
+    }
+
+    section { padding:65px 7%; }
+
+    .about-grid {
+        grid-template-columns:1fr;
+        gap:30px;
+    }
+
+    .about-visual { min-height:250px; }
+
+    .skills-grid,
+    .learning-grid {
+        grid-template-columns:1fr 1fr;
+    }
+}
+
+@media(max-width:500px) {
+    .skills-grid,
+    .learning-grid {
+        grid-template-columns:1fr;
+    }
+
+    .info { grid-template-columns:1fr 1fr; }
+
+    .hero h1 { font-size:39px; }
+
+    .section-heading h2 { font-size:27px; }
+
+    .hub-hero { padding:65px 7% 75px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- MAIN WEBSITE -->
+
+<div id="mainWebsite">
+
+<header>
+    <div class="logo"><span></span></div>
+    <div class="menu" onclick="toggleMenu()">☰</div>
+
+    <nav id="navigation">
+        <a href="#home" onclick="closeMenu()">Home</a>
+        <a href="#about" onclick="closeMenu()">Biography</a>
+        <a href="#education" onclick="closeMenu()">Education</a>
+        <a href="#expertise" onclick="closeMenu()">Expertise</a>
+        <a href="#journey" onclick="closeMenu()">My Journey</a>
+    </nav>
+</header>
+
+<div class="hero" id="home">
+    <div class="hero-content">
+        <div class="tag">Official Author Profile</div>
+        <h1>Peter Wafula <span>Simiyu</span></h1>
+
+        <p>
+            A physiotherapy student, technology enthusiast,
+            developer, web designer and forex trader.
+            Driven by knowledge, innovation and continuous growth.
+        </p>
+
+        <div class="hero-buttons">
+            <a href="#about" class="btn primary">DISCOVER MY STORY</a>
+            <a href="#expertise" class="btn secondary">EXPLORE EXPERTISE</a>
+            <button class="btn proceed-btn" onclick="openHub()">
+                GET STARTED
+            </button>
+        </div>
+    </div>
+</div>
+
+<section class="about" id="about">
+    <div class="about-grid">
+        <div class="about-visual">
+            <div class="initials">PWS</div>
+        </div>
+
+        <div class="about-text">
+            <div class="section-heading">
+                <small>GET TO KNOW ME</small>
+                <h2>About the Author</h2>
+            </div>
+
+            <h3>Who is Peter Wafula Simiyu?</h3>
+
+            <p>
+                Peter Wafula Simiyu was born on 19th March 2002.
+                He is an ambitious and versatile individual with
+                interests spanning healthcare, technology,
+                cybersecurity and financial markets.
+            </p>
+
+            <p>
+                Having completed his primary and secondary education,
+                he is currently in his fourth and final year pursuing
+                a Bachelor of Science in Physiotherapy.
+            </p>
+
+            <p>
+                Beyond healthcare, Peter is passionate about
+                technology, digital innovation, application
+                development, web design and financial markets.
+            </p>
+
+            <div class="info">
+                <div><strong>FULL NAME</strong><span>Peter Wafula Simiyu</span></div>
+                <div><strong>DATE OF BIRTH</strong><span>19 March 2002</span></div>
+                <div><strong>EDUCATION</strong><span>BSc Physiotherapy</span></div>
+                <div><strong>STATUS</strong><span>Final-year student</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="education" id="education">
+    <div class="section-heading">
+        <small>ACADEMIC BACKGROUND</small>
+        <h2>Educational Journey</h2>
+    </div>
+
+    <div class="timeline">
+        <div class="timeline-item">
+            <h3>Primary Education</h3>
+            <p>Successfully completed primary-level education.</p>
+        </div>
+        <div class="timeline-item">
+            <h3>Secondary Education</h3>
+            <p>Successfully completed secondary-level education.</p>
+        </div>
+        <div class="timeline-item">
+            <h3>Bachelor of Science in Physiotherapy</h3>
+            <p>Currently pursuing the fourth and final year.</p>
+        </div>
+    </div>
+</section>
+
+<section class="expertise" id="expertise">
+    <div class="section-heading">
+        <small>PROFESSIONAL INTERESTS</small>
+        <h2>Areas of Expertise</h2>
+    </div>
+
+    <div class="skills-grid">
+        <div class="skill-card"><div class="skill-icon">01</div><h3>Physiotherapy</h3><p>Human movement, rehabilitation and physical health.</p></div>
+        <div class="skill-card"><div class="skill-icon">02</div><h3>Web Development</h3><p>Designing and developing modern responsive websites.</p></div>
+        <div class="skill-card"><div class="skill-icon">03</div><h3>Android Development</h3><p>Building Android application projects.</p></div>
+        <div class="skill-card"><div class="skill-icon">04</div><h3>Cybersecurity</h3><p>Digital security and protecting computer systems.</p></div>
+        <div class="skill-card"><div class="skill-icon">05</div><h3>Forex Trading</h3><p>Financial markets and continuous trading development.</p></div>
+        <div class="skill-card"><div class="skill-icon">06</div><h3>Technology & Innovation</h3><p>Digital solutions and creative problem-solving.</p></div>
+    </div>
+</section>
+
+<section class="journey" id="journey">
+    <div class="section-heading">
+        <small>PERSONAL DEVELOPMENT</small>
+        <h2>My Journey in Forex Trading</h2>
+    </div>
+
+    <div class="journey-content">
+        <p>
+            Peter's journey into forex trading began in January 2024.
+            What started as an exploration of financial markets has
+            developed into an ongoing learning experience.
+        </p>
+
+        <p>
+            Through continuous study, market observation and
+            practical experience, he continues to refine his
+            understanding of the foreign exchange market.
+        </p>
+
+        <div class="journey-highlight">
+            <h3>January 2024 — The Beginning</h3>
+            <p>
+                A journey focused on understanding financial markets,
+                developing trading knowledge and continuously scaling up.
+            </p>
+        </div>
+    </div>
+</section>
+
+<div class="quote">
+    <h2>"Never stop learning, never stop building, and never stop growing."</h2>
+    <p>PETER WAFULA SIMIYU</p>
+</div>
+
+<footer>
+    <p>© <span class="year"></span> <strong>Peter Wafula Simiyu.</strong></p>
+    <p>Personal Biography & Official Author Profile</p>
+</footer>
+
+</div>
+
+<!-- SECOND WEBSITE: LEARNING HUB -->
+
+<div id="learningHub">
+
+    <header>
+        <div class="logo">PETER <span>SIMIYU.</span></div>
+        <button class="btn secondary" onclick="goBack()" style="padding:9px 16px">
+            ← BACK
+        </button>
+    </header>
+
+    <div class="hub-hero">
+        <small>EXPLORE • LEARN • GROW</small>
+        <h1>Knowledge & Learning Hub</h1>
+        <p>
+            Discover learning resources across financial markets,
+            cybersecurity and web development.
+            Choose an area below to continue your learning journey.
+        </p>
+    </div>
+
+    <div class="hub-content">
+
+        <div class="hub-heading">
+            <h2>Explore Learning Categories</h2>
+            <p>Select a category to visit its learning website.</p>
+        </div>
+
+        <div class="learning-grid">
+
+            <div class="learning-card">
+                <div class="card-top">
+                    <span>01</span>
+                </div>
+
+                <div class="card-body">
+                    <small>FINANCIAL MARKETS</small>
+                    <h3>Learn Forex</h3>
+                    <p>
+                        Explore foreign exchange markets,
+                        currencies, trading concepts and
+                        financial market education.
+                    </p>
+                    <a class="learn-btn"
+                       href="https://simiyufx.github.io/LEARNEARN/TRADERS"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        START LEARNING →
+                    </a>
+                </div>
+            </div>
+
+            <div class="learning-card">
+                <div class="card-top">
+                    <span>02</span>
+                </div>
+
+                <div class="card-body">
+                    <small>DIGITAL SECURITY</small>
+                    <h3>Learn Cyber Security</h3>
+                    <p>
+                        Explore cybersecurity concepts,
+                        online safety, digital protection
+                        and information security.
+                    </p>
+                    <a class="learn-btn"
+                       href="https://www.security.com/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        START LEARNING →
+                    </a>
+                </div>
+            </div>
+
+            <div class="learning-card">
+                <div class="card-top">
+                    <span>03</span>
+                </div>
+
+                <div class="card-body">
+                    <small>TECHNOLOGY & DEVELOPMENT</small>
+                    <h3>Learn Web Development</h3>
+                    <p>
+                        Explore website creation,
+                        web technologies, development
+                        fundamentals and digital design.
+                    </p>
+                    <a class="learn-btn"
+                       href="https://www.web.com/"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        START LEARNING →
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="text-align:center">
+            <button class="back-btn" onclick="goBack()">
+                ← RETURN TO AUTHOR PROFILE
+            </button>
+        </div>
+
+    </div>
+
+    <div class="hub-footer">
+        <p>© <span class="year"></span> <strong>Peter Wafula Simiyu.</strong></p>
+        <p>Knowledge is a journey. Keep learning.</p>
+    </div>
+
+</div>
+
+<script>
+function toggleMenu() {
+    document.getElementById("navigation").classList.toggle("active");
+}
+
+function closeMenu() {
+    document.getElementById("navigation").classList.remove("active");
+}
+
+function openHub() {
+    document.getElementById("mainWebsite").style.display = "none";
+    document.getElementById("learningHub").style.display = "block";
+    window.scrollTo(0, 0);
+    history.pushState({page:"hub"}, "", "#learning-hub");
+}
+
+function goBack() {
+    document.getElementById("learningHub").style.display = "none";
+    document.getElementById("mainWebsite").style.display = "block";
+    window.scrollTo(0, 0);
+    history.pushState({page:"home"}, "", "#home");
+}
+
+window.addEventListener("popstate", function() {
+    if (location.hash === "#learning-hub") {
+        document.getElementById("mainWebsite").style.display = "none";
+        document.getElementById("learningHub").style.display = "block";
+    } else {
+        document.getElementById("learningHub").style.display = "none";
+        document.getElementById("mainWebsite").style.display = "block";
+    }
+});
+
+document.querySelectorAll(".year").forEach(function(el) {
+    el.textContent = new Date().getFullYear();
+});
+</script>
+
+</body>
+</html>

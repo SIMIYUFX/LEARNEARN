@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeLog — Volatilities & Currencies Trading Journal</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            appBg: '#0B1018',
+            cardBg: '#131A24',
+            cardHover: '#18212E',
+            borderSubtle: '#1E2836',
+            emeraldBrand: '#22C55E',
+            emeraldMuted: 'rgba(34, 197, 94, 0.14)',
+            lossRed: '#EF4444',
+            lossMuted: 'rgba(239, 68, 68, 0.14)',
+            textMuted: '#8B98A9',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Supabase JS SDK v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Chart.js for Equity Curve & Win/Loss Donut -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #0B1018;
+      color: #F3F6FA;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B1018;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E2836;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2C3A4E;
+    }
+
+    /* Active sidebar item pill matching reference image */
+    .nav-item-active {
+      background-color: #1E2734;
+      color: #F8FAFC;
+      font-weight: 500;
+    }
+    .nav-item-inactive {
+      color: #8B98A9;
+    }
+    .nav-item-inactive:hover {
+      background-color: rgba(30, 39, 52, 0.45);
+      color: #E2E8F0;
+    }
+
+    /* Glass/card surface */
+    .tl-card {
+      background-color: #131A24;
+      border: 1px solid #1C2532;
+      border-radius: 12px;
+    }
+
+    /* Form inputs */
+    .tl-input {
+      background-color: #0D131C;
+      border: 1px solid #222D3D;
+      color: #F1F5F9;
+      border-radius: 8px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tl-input:focus {
+      outline: none;
+      border-color: #22C55E;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    }
+    .tl-input option {
+      background-color: #131A24;
+      color: #F1F5F9;
+    }
+
+    /* Fade transitions */
+    .fade-in {
+      animation: fadeIn 0.22s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0B1018] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
+
+  <!-- ===================================================================== -->
+  <!-- TOAST / NOTIFICATION BANNER (Replaces alert/confirm)                  -->
+  <!-- ===================================================================== -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- ===================================================================== -->
+  <!-- AUTHENTICATION VIEW (SIGN IN & CREATE ACCOUNT)                        -->
+  <!-- ===================================================================== -->
+  <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 bg-[#0B1018]">
+    <div class="w-full max-w-md tl-card p-6 sm:p-8 shadow-2xl fade-in">
+      <!-- Brand Header -->
+      <div class="flex flex-col items-center text-center mb-7">
+        <div class="text-3xl font-extrabold tracking-tight mb-1.5">
+          <span class="text-[#22C55E]">Trade</span><span class="text-white">Log</span>
+        </div>
+        <p class="text-sm text-[#8B98A9]">Synthetic Volatilities &amp; Currencies Journal</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="grid grid-cols-2 gap-1.5 p-1 bg-[#0B1018] rounded-lg border border-[#1E2836] mb-6">
+        <button type="button" id="tabSignIn" onclick="switchAuthMode('signin')" class="py-2 text-sm font-medium rounded-md bg-[#1E2734] text-white transition">
+          Sign In
+        </button>
+        <button type="button" id="tabSignUp" onclick="switchAuthMode('signup')" class="py-2 text-sm font-medium rounded-md text-[#8B98A9] hover:text-white transition">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Sign In Form -->
+      <form id="signInForm" onsubmit="handleSignIn(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Email Address</label>
+          <input type="email" id="loginEmail" required placeholder="trader@domain.com" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Password</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+        </div>
+        <button type="submit" id="btnSignIn" class="w-full py-2.5 px-4 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] font-semibold text-sm transition shadow-lg shadow-emerald-500/15 cursor-pointer">
+          Sign In to Dashboard
+        </button>
+      </form>
+
+      <!-- Create Account Form -->
+      <form id="signUpForm" onsubmit="handleSignUp(event)" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Trader Name</label>
+          <input type="text" id="regName" required placeholder="Alex Morgan" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Email Address</label>
+          <input type="email" id="regEmail" required placeholder="trader@domain.com" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Password (min 6 characters)</label>
+          <input type="password" id="regPassword" required minlength="6" placeholder="Create a strong password" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Account Type</label>
+            <select id="regAccountType" class="tl-input w-full px-3 py-2.5 text-sm">
+              <option value="Real">Real Account</option>
+              <option value="Demo">Demo Account</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Starting Capital ($)</label>
+            <input type="number" id="regCapital" required min="1" step="any" value="1000" class="tl-input w-full px-3 py-2.5 text-sm" />
+          </div>
+        </div>
+        <button type="submit" id="btnSignUp" class="w-full py-2.5 px-4 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] font-semibold text-sm transition shadow-lg shadow-emerald-500/15 cursor-pointer">
+          Create Trader Account
+        </button>
+      </form>
+
+      <!-- Divider & Instant Sandbox / Demo Entry -->
+      <div class="mt-6 pt-5 border-t border-[#1E2836]">
+        <button type="button" onclick="enterInstantWorkspace()" class="w-full py-2.5 px-4 rounded-lg bg-[#1A2331] hover:bg-[#222E40] border border-[#283548] text-slate-200 font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+          <svg class="w-4 h-4 text-[#22C55E]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Your the boss</span>
+        </button>
+        <p class="text-[11px] text-center text-[#64748B] mt-2.5">
+         Credentials can be updated inside Settings after login.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN APPLICATION SHELL                                                -->
+  <!-- ===================================================================== -->
+  <div id="appShell" class="hidden min-h-screen flex flex-col lg:flex-row">
+
+    <!-- Mobile Header -->
+    <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-[#131A24] border-b border-[#1E2836] sticky top-0 z-30">
+      <div class="flex items-center gap-3">
+        <button type="button" onclick="toggleMobileSidebar()" class="p-2 rounded-lg bg-[#1A2332] text-slate-200 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span class="text-xl font-extrabold tracking-tight">
+          <span class="text-[#22C55E]">Trade</span><span class="text-white">Log</span>
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openTradeModal()" class="px-3 py-1.5 rounded-lg bg-[#22C55E] text-[#07110B] font-semibold text-xs">
+          + Place Trade
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+
+    <!-- LEFT SIDEBAR (Matches reference image layout & colors) -->
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-60 bg-[#131A24] border-r border-[#1B2431] flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out shrink-0">
+      <div>
+        <!-- Brand Logo -->
+        <div class="px-6 pt-6 pb-6">
+          <a href="#" onclick="navigateTo('dashboard'); return false;" class="inline-flex items-center text-[26px] font-extrabold tracking-tight leading-none">
+            <span class="text-[#22C55E]">Trade</span><span class="text-white">Log</span>
+          </a>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="px-3 space-y-1.5">
+          <button type="button" id="nav-dashboard" onclick="navigateTo('dashboard')" class="nav-item-active w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer">
+            <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            <span>Dashboard</span>
+          </button>
+
+          <button type="button" id="nav-tradelog" onclick="navigateTo('tradelog')" class="nav-item-inactive w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer">
+            <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            </svg>
+            <span class="flex-1 text-left">Trade Log</span>
+            <span id="pendingBadge" class="hidden px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-400">0</span>
+          </button>
+
+          <button type="button" id="nav-analytics" onclick="navigateTo('analytics')" class="nav-item-inactive w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer">
+            <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M7 16V9m5 7V5m5 11v-4" />
+            </svg>
+            <span>Analytics</span>
+          </button>
+
+          <button type="button" id="nav-brokers" onclick="navigateTo('brokers')" class="nav-item-inactive w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer">
+            <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 12h.01M3 10h18" />
+            </svg>
+            <span>Brokers</span>
+          </button>
+
+          <button type="button" id="nav-settings" onclick="navigateTo('settings')" class="nav-item-inactive w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer">
+            <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Bottom Account Summary & Profile Card inside Sidebar -->
+      <div class="p-3.5 border-t border-[#1B2431] space-y-3">
+        <!-- Real / Demo Quick Switcher -->
+        <div class="p-3 rounded-xl bg-[#0E141D] border border-[#1E2836]">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-medium text-[#8B98A9]">Account Mode</span>
+            <button type="button" onclick="toggleAccountMode()" id="sidebarAccountBadge" class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/15 text-[#22C55E] border border-emerald-500/30 hover:bg-emerald-500/25 transition cursor-pointer">
+              REAL
+            </button>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs text-[#8B98A9]">Start Cap:</span>
+            <button type="button" onclick="navigateTo('brokers')" id="sidebarStartCap" class="text-xs font-semibold text-white hover:text-[#22C55E] transition cursor-pointer">
+              $10,000.00
+            </button>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-xs text-[#8B98A9]">Equity:</span>
+            <span id="sidebarCurrentEquity" class="text-xs font-bold text-[#22C55E]">$22,847.00</span>
+          </div>
+        </div>
+
+        <!-- User Profile & Avatar Upload Shortcut -->
+        <div class="flex items-center justify-between gap-2 px-1">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <label for="avatarUploadInput" title="Click to upload profile photo" class="relative group cursor-pointer shrink-0">
+              <img id="sidebarAvatarImg" src="https://placehold.co/80x80/1E293B/22C55E?text=TL" onerror="this.src='https://placehold.co/80x80/1E293B/22C55E?text=TL'" alt="Profile" class="w-9 h-9 rounded-full object-cover border border-[#2A374A] group-hover:border-[#22C55E] transition" />
+              <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#22C55E] text-[#07110B] flex items-center justify-center text-[9px] font-bold shadow">
+                +
+              </span>
+            </label>
+            <input type="file" id="avatarUploadInput" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)" />
+            <div class="min-w-0">
+              <p id="sidebarUserName" class="text-xs font-semibold text-white truncate">Pro Trader</p>
+              <p id="sidebarSyncStatus" class="text-[10px] text-[#22C55E] truncate">● Cloud Synced</p>
+            </div>
+          </div>
+          <button type="button" onclick="handleLogout()" title="Sign Out" class="p-1.5 rounded-lg text-[#8B98A9] hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT WORKSPACE -->
+    <main class="flex-1 min-w-0 bg-[#0B1018] p-4 sm:p-6 lg:p-7 overflow-y-auto">
+      <div class="max-w-[1380px] mx-auto">
+
+        <!-- =============================================================== -->
+        <!-- TOP ACTION BAR (Clean, Minimal, Uncluttered)                    -->
+        <!-- =============================================================== -->
+        <header class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h1 id="pageHeaderTitle" class="text-lg sm:text-xl font-bold text-white tracking-tight hidden sm:block">Overview</h1>
+            <!-- Capital & Gain/Loss Percentage Pill Bar -->
+            <div class="flex items-center gap-2 bg-[#131A24] border border-[#1E2836] rounded-lg px-3 py-1.5 text-xs">
+              <span id="topAccountModePill" class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-[#22C55E]">REAL</span>
+              <span class="text-[#8B98A9]">Capital:</span>
+              <button type="button" onclick="openQuickCapitalModal()" id="topStartCapitalText" class="font-semibold text-white hover:text-[#22C55E] underline decoration-dotted underline-offset-4 cursor-pointer" title="Click to edit starting capital">
+                $10,000.00
+              </button>
+              <span class="text-[#2A3648]">|</span>
+              <span class="text-[#8B98A9]">Gain:</span>
+              <span id="topGainPctText" class="font-semibold text-[#22C55E]">+128.47%</span>
+              <span class="text-[#2A3648]">|</span>
+              <span class="text-[#8B98A9]">Drawdown/Loss:</span>
+              <span id="topLossPctText" class="font-semibold text-[#EF4444]">-14.20%</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <!-- Profile Avatar Upload Button on Dashboard Header -->
+            <label for="avatarUploadInput" class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#131A24] hover:bg-[#192230] border border-[#1E2836] text-xs text-slate-300 cursor-pointer transition" title="Upload Profile Picture">
+              <img id="headerAvatarImg" src="https://placehold.co/48x48/1E293B/22C55E?text=TL" onerror="this.src='https://placehold.co/48x48/1E293B/22C55E?text=TL'" alt="Avatar" class="w-5 h-5 rounded-full object-cover" />
+              <span>Photo</span>
+            </label>
+
+            <!-- Primary CTA: Place / Record Trade -->
+            <button type="button" onclick="openTradeModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] font-semibold text-xs sm:text-sm transition shadow-lg shadow-emerald-500/10 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Place Trade</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- =============================================================== -->
+        <!-- VIEW 1: DASHBOARD (EXACT MATCH TO REFERENCE SCREENSHOT)         -->
+        <!-- =============================================================== -->
+        <section id="view-dashboard" class="space-y-5 fade-in">
+
+          <!-- ROW 1: 4 KPI STAT CARDS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <!-- Card 1: Total Trades -->
+            <div class="tl-card px-5 py-4 flex items-center gap-4">
+              <div class="w-11 h-11 rounded-lg bg-[#172C26] flex items-center justify-center text-[#22C55E] shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[13px] font-medium text-[#94A3B8]">Total Trades:</p>
+                <div class="flex items-baseline gap-2">
+                  <p id="kpiTotalTrades" class="text-2xl font-bold text-white tracking-tight mt-0.5">0</p>
+                  <span id="kpiPendingNote" class="text-[11px] font-medium text-amber-400"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Win Rate -->
+            <div class="tl-card px-5 py-4 flex items-center gap-4">
+              <div class="w-11 h-11 rounded-lg bg-[#172C26] flex items-center justify-center text-[#22C55E] shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="8" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 12.2l1.8 1.8 3.7-4" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[13px] font-medium text-[#94A3B8]">Win Rate:</p>
+                <div class="flex items-baseline gap-2">
+                  <p id="kpiWinRate" class="text-2xl font-bold text-white tracking-tight mt-0.5">0.0%</p>
+                  <span id="kpiLossRateSub" class="text-[11px] font-medium text-[#EF4444]">0% L</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Total P&L (with Gain % / Lost % of capital) -->
+            <div class="tl-card px-5 py-4 flex items-center gap-4">
+              <div class="w-11 h-11 rounded-lg bg-[#172C26] flex items-center justify-center text-[#22C55E] shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="6" width="18" height="12" rx="2" />
+                  <circle cx="12" cy="12" r="2.5" />
+                  <path d="M7 12h.01M17 12h.01" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[13px] font-medium text-[#94A3B8]">Total P&amp;L:</p>
+                <div class="flex items-baseline gap-2 flex-wrap">
+                  <p id="kpiTotalPnl" class="text-2xl font-bold text-white tracking-tight mt-0.5">+$0</p>
+                  <span id="kpiNetReturnPct" class="text-xs font-semibold text-[#22C55E]">+0.0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Avg RR -->
+            <div class="tl-card px-5 py-4 flex items-center gap-4">
+              <div class="w-11 h-11 rounded-lg bg-[#172C26] flex items-center justify-center text-[#22C55E] shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 17l5-5 4 4 7-8" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 8h5v5" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[13px] font-medium text-[#94A3B8]">Avg RR:</p>
+                <p id="kpiAvgRR" class="text-2xl font-bold text-white tracking-tight mt-0.5">1:0.0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 2: EQUITY CURVE (Left 2/3) + WIN/LOSS DONUT (Right 1/3) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <!-- Equity Curve Card -->
+            <div class="tl-card p-5 lg:col-span-8 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-[16px] font-semibold text-white">Equity Curve</h2>
+                <div class="flex items-center gap-3 text-xs">
+                  <span class="text-[#8B98A9]">Gain: <strong id="chartGainPct" class="text-[#22C55E]">+0.0%</strong></span>
+                  <span class="text-[#8B98A9]">Lost: <strong id="chartLostPct" class="text-[#EF4444]">-0.0%</strong></span>
+                </div>
+              </div>
+              <div class="relative w-full h-[235px]">
+                <canvas id="equityCurveCanvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Win / Loss Donut Chart Card -->
+            <div class="tl-card p-5 lg:col-span-4 flex flex-col items-center justify-center relative">
+              <div class="relative w-full max-w-[250px] h-[235px] flex items-center justify-center">
+                <canvas id="winLossDonutCanvas"></canvas>
+                <!-- Center Overlay Text matching screenshot -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span class="text-xs font-medium text-slate-300">Wins</span>
+                  <span id="donutWinsPctText" class="text-xl font-bold text-[#22C55E] leading-tight">0%</span>
+                </div>
+                <!-- Right Callout Label matching screenshot -->
+                <div class="absolute right-0 top-1/2 -translate-y-1/2 text-right pointer-events-none pr-1">
+                  <span class="block text-[11px] font-medium text-slate-200 leading-tight">Losses</span>
+                  <span id="donutLossesPctText" class="block text-xs font-bold text-[#EF4444]">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 3: RECENT / ACTIVE TRADES TABLE (Matches reference table structure + Confirm Win/Loss & Edit) -->
+          <div class="tl-card overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-[#1C2532] flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <h3 class="text-sm font-semibold text-white">Recent &amp; Pending Trades</h3>
+                <span class="text-xs text-[#8B98A9]">Confirm Win/Loss or Edit any trade</span>
+              </div>
+              <button type="button" onclick="navigateTo('tradelog')" class="text-xs font-medium text-[#22C55E] hover:underline cursor-pointer">
+                View Full Journal →
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-[#1C2532] text-[13px] font-medium text-[#94A3B8]">
+                    <th class="py-3.5 px-5">Date</th>
+                    <th class="py-3.5 px-4">Pair / Volatility</th>
+                    <th class="py-3.5 px-4">Side</th>
+                    <th class="py-3.5 px-4">Entry</th>
+                    <th class="py-3.5 px-4">Exit / Target</th>
+                    <th class="py-3.5 px-4">Risk / Status</th>
+                    <th class="py-3.5 px-4">P&amp;L</th>
+                    <th class="py-3.5 px-5 text-right">Confirm / Edit</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTradesTbody" class="divide-y divide-[#1A2230] text-[13.5px]">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- VIEW 2: FULL TRADE LOG (SEARCH, FILTER, CONFIRM, EDIT, DELETE)  -->
+        <!-- =============================================================== -->
+        <section id="view-tradelog" class="hidden space-y-5 fade-in">
+          <div class="tl-card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="text" id="searchTradeInput" oninput="renderAllViews()" placeholder="Search pair or volatility (e.g. V75, EUR/USD)..." class="tl-input px-3.5 py-2 text-xs sm:text-sm w-64" />
+              <select id="filterCategorySelect" onchange="renderAllViews()" class="tl-input px-3 py-2 text-xs sm:text-sm">
+                <option value="ALL">All Markets</option>
+                <option value="Volatility">Synthetic Volatilities</option>
+                <option value="Currency">Currencies (Forex)</option>
+              </select>
+              <select id="filterStatusSelect" onchange="renderAllViews()" class="tl-input px-3 py-2 text-xs sm:text-sm">
+                <option value="ALL">All Outcomes</option>
+                <option value="Pending">Pending Confirmation</option>
+                <option value="Win">Wins Only</option>
+                <option value="Loss">Losses Only</option>
+              </select>
+            </div>
+            <button type="button" onclick="openTradeModal()" class="px-4 py-2 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] font-semibold text-xs sm:text-sm transition cursor-pointer">
+              + Record New Trade
+            </button>
+          </div>
+
+          <div class="tl-card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-[#1C2532] text-[13px] font-medium text-[#94A3B8]">
+                    <th class="py-3.5 px-5">Date</th>
+                    <th class="py-3.5 px-4">Instrument</th>
+                    <th class="py-3.5 px-4">Market</th>
+                    <th class="py-3.5 px-4">Side</th>
+                    <th class="py-3.5 px-4">Entry → Exit</th>
+                    <th class="py-3.5 px-4">Risked / Target</th>
+                    <th class="py-3.5 px-4">Result</th>
+                    <th class="py-3.5 px-4">Net P&amp;L</th>
+                    <th class="py-3.5 px-5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="fullTradeLogTbody" class="divide-y divide-[#1A2230] text-[13.5px]">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- VIEW 3: ANALYTICS (GAIN %, LOST %, VOLATILITIES VS CURRENCIES)  -->
+        <!-- =============================================================== -->
+        <section id="view-analytics" class="hidden space-y-5 fade-in">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="tl-card p-5">
+              <p class="text-xs text-[#8B98A9] mb-1">Gross Gain Percentage</p>
+              <p id="anaGainPct" class="text-2xl font-bold text-[#22C55E]">+0.00%</p>
+              <p id="anaGainDollars" class="text-xs text-[#8B98A9] mt-1">+$0.00 total won</p>
+            </div>
+            <div class="tl-card p-5">
+              <p class="text-xs text-[#8B98A9] mb-1">Gross Lost Percentage</p>
+              <p id="anaLostPct" class="text-2xl font-bold text-[#EF4444]">-0.00%</p>
+              <p id="anaLostDollars" class="text-xs text-[#8B98A9] mt-1">-$0.00 total lost</p>
+            </div>
+            <div class="tl-card p-5">
+              <p class="text-xs text-[#8B98A9] mb-1">Profit Factor</p>
+              <p id="anaProfitFactor" class="text-2xl font-bold text-white">0.00</p>
+              <p class="text-xs text-[#8B98A9] mt-1">Gross Profit / Gross Loss</p>
+            </div>
+            <div class="tl-card p-5">
+              <p class="text-xs text-[#8B98A9] mb-1">Net Account Growth</p>
+              <p id="anaNetGrowth" class="text-2xl font-bold text-[#22C55E]">+0.00%</p>
+              <p id="anaEquitySummary" class="text-xs text-[#8B98A9] mt-1">$0.00 → $0.00</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Breakdown by Market Type -->
+            <div class="tl-card p-5">
+              <h3 class="text-base font-semibold text-white mb-4">Synthetic Volatilities vs Currencies</h3>
+              <div id="marketBreakdownContainer" class="space-y-4"></div>
+            </div>
+
+            <!-- Breakdown by Top Traded Instruments -->
+            <div class="tl-card p-5">
+              <h3 class="text-base font-semibold text-white mb-4">Performance by Instrument</h3>
+              <div id="instrumentBreakdownContainer" class="space-y-3"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- VIEW 4: BROKERS & CAPITAL MANAGEMENT (REAL / DEMO & CAPITAL)    -->
+        <!-- =============================================================== -->
+        <section id="view-brokers" class="hidden space-y-5 fade-in">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Account Capital & Real/Demo Configurator -->
+            <div class="tl-card p-6">
+              <h2 class="text-base font-semibold text-white mb-1">Trading Account &amp; Starting Capital</h2>
+              <p class="text-xs text-[#8B98A9] mb-5">Switch between Real and Demo accounts or adjust your starting balance at any time. All percentage gains and losses recalculate automatically.</p>
+
+              <form onsubmit="saveAccountSettings(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Account Execution Mode</label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                      <input type="radio" name="accountModeRadio" value="Real" class="peer sr-only" />
+                      <div class="p-3 rounded-lg border border-[#222D3D] bg-[#0D131C] peer-checked:border-[#22C55E] peer-checked:bg-emerald-500/10 text-center transition">
+                        <span class="block text-sm font-bold text-white">REAL ACCOUNT</span>
+                        <span class="block text-[11px] text-[#8B98A9]">Live Funded Capital</span>
+                      </div>
+                    </label>
+                    <label class="cursor-pointer">
+                      <input type="radio" name="accountModeRadio" value="Demo" class="peer sr-only" />
+                      <div class="p-3 rounded-lg border border-[#222D3D] bg-[#0D131C] peer-checked:border-amber-400 peer-checked:bg-amber-500/10 text-center transition">
+                        <span class="block text-sm font-bold text-white">DEMO ACCOUNT</span>
+                        <span class="block text-[11px] text-[#8B98A9]">Simulated / Practice</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Starting Capital (USD $)</label>
+                  <input type="number" id="brokerStartingCapitalInput" step="any" min="1" required class="tl-input w-full px-3.5 py-2.5 text-sm font-semibold" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Broker / Server Name</label>
+                  <input type="text" id="brokerNameInput" placeholder="e.g. Deriv Synthetic Server / IC Markets" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+                </div>
+
+                <button type="submit" class="px-5 py-2.5 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] font-semibold text-sm transition cursor-pointer">
+                  Save Account &amp; Capital
+                </button>
+              </form>
+            </div>
+
+            <!-- Live Equity & Return Summary Card -->
+            <div class="tl-card p-6 flex flex-col justify-between">
+              <div>
+                <h2 class="text-base font-semibold text-white mb-1">Live Account Valuation</h2>
+                <p class="text-xs text-[#8B98A9] mb-5">Real-time balance calculation based on confirmed wins and losses.</p>
+
+                <div class="space-y-3 bg-[#0D131C] border border-[#1E2836] rounded-xl p-4">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-[#8B98A9]">Account Type:</span>
+                    <span id="brokerSummaryType" class="font-bold text-[#22C55E]">REAL</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-[#8B98A9]">Starting Capital:</span>
+                    <span id="brokerSummaryStart" class="font-semibold text-white">$10,000.00</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-[#8B98A9]">Total Realized P&amp;L:</span>
+                    <span id="brokerSummaryPnl" class="font-semibold text-[#22C55E]">+$0.00</span>
+                  </div>
+                  <div class="pt-2.5 border-t border-[#1E2836] flex justify-between text-base">
+                    <span class="font-medium text-slate-200">Current Equity:</span>
+                    <span id="brokerSummaryEquity" class="font-bold text-white">$10,000.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-5 pt-4 border-t border-[#1E2836] flex items-center justify-between">
+                <span class="text-xs text-[#8B98A9]">Need a fresh start?</span>
+                <button type="button" onclick="resetToSampleTrades()" class="text-xs font-medium text-slate-300 hover:text-[#22C55E] underline cursor-pointer">
+                  Load Sample Volatilities &amp; Forex Trades
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- VIEW 5: SETTINGS (PROFILE AVATAR, CREDENTIALS & SUPABASE SQL)   -->
+        <!-- =============================================================== -->
+        <section id="view-settings" class="hidden space-y-5 fade-in">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Profile Picture & Trader Identity -->
+            <div class="tl-card p-6">
+              <h2 class="text-base font-semibold text-white mb-1">Trader Profile &amp; Photo</h2>
+              <p class="text-xs text-[#8B98A9] mb-5">Upload your profile photo to display across your dashboard and sidebar.</p>
+
+              <div class="flex items-center gap-4 mb-5">
+                <img id="settingsAvatarPreview" src="https://placehold.co/120x120/1E293B/22C55E?text=TL" onerror="this.src='https://placehold.co/120x120/1E293B/22C55E?text=TL'" alt="Profile Avatar" class="w-16 h-16 rounded-full object-cover border-2 border-[#22C55E]" />
+                <div>
+                  <label for="avatarUploadInput" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#1E2734] hover:bg-[#273344] text-white text-xs font-medium cursor-pointer transition">
+                    <svg class="w-4 h-4 text-[#22C55E]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Upload New Image</span>
+                  </label>
+                  <p class="text-[11px] text-[#8B98A9] mt-1.5">JPG, PNG or WebP. Synced to Supabase Profile.</p>
+                </div>
+              </div>
+
+              <form onsubmit="updateProfileName(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Display Name</label>
+                  <input type="text" id="settingsDisplayName" required class="tl-input w-full px-3.5 py-2.5 text-sm" />
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] font-semibold text-xs sm:text-sm transition cursor-pointer">
+                  Update Profile
+                </button>
+              </form>
+            </div>
+
+            <!-- Security Credentials (ONLY editable once logged in) -->
+            <div class="tl-card p-6">
+              <div class="flex items-center justify-between mb-1">
+                <h2 class="text-base font-semibold text-white">Account Credentials</h2>
+                <span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/15 text-[#22C55E]">Authenticated Session</span>
+              </div>
+              <p class="text-xs text-[#8B98A9] mb-5">Credentials can only be modified while signed in to your active account.</p>
+
+              <form onsubmit="updateUserCredentials(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Account Email</label>
+                  <input type="email" id="settingsEmailInput" placeholder="trader@domain.com" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">New Password (leave blank to keep current)</label>
+                  <input type="password" id="settingsNewPassword" minlength="6" placeholder="••••••••" class="tl-input w-full px-3.5 py-2.5 text-sm" />
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-[#1E2734] hover:bg-[#283446] border border-[#2F3D52] text-white font-semibold text-xs sm:text-sm transition cursor-pointer">
+                  Update Login Credentials
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Supabase Database Setup Helper (Optional one-click SQL copy) -->
+          <div class="tl-card p-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 class="text-sm font-semibold text-white">Supabase Database &amp; Storage Schema</h3>
+                <p class="text-xs text-[#8B98A9]">Connected to <code class="text-emerald-400">xfbyyywxzmebjyfpxapx.supabase.co</code>. Run this SQL in your Supabase SQL Editor if you haven't created your tables yet.</p>
+              </div>
+              <button type="button" onclick="copySupabaseSql()" class="px-3.5 py-1.5 rounded-lg bg-[#22C55E] text-[#07110B] font-semibold text-xs cursor-pointer">
+                Copy SQL Setup
+              </button>
+            </div>
+            <pre id="supabaseSqlBlock" class="p-3.5 rounded-lg bg-[#0A0E15] border border-[#1E2836] text-[11px] text-slate-300 overflow-x-auto leading-relaxed"> 1. Create Profiles Table
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  full_name text,
+  account_type text default 'Real',
+  starting_capital numeric default 10000,
+  avatar_url text,
+  updated_at timestamptz default now()
+);
+
+-- 2. Create Trades Table
+create table if not exists public.trades (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  trade_date date default current_date not null,
+  asset_category text default 'Volatility',
+  symbol text not null,
+  side text not null,
+  entry_price numeric,
+  exit_price numeric,
+  amount_risked numeric not null,
+  profit_target numeric not null,
+  status text default 'Open',
+  pnl numeric default 0,
+  notes text,
+  created_at timestamptz default now()
+);
+
+-- 3. Enable Row Level Security (RLS)
+alter table public.profiles enable row level security;
+alter table public.trades enable row level security;
+
+-- 4. Create Access Policies (Drop first so re-running never causes errors)
+drop policy if exists "Users manage own profile" on public.profiles;
+create policy "Users manage own profile"
+  on public.profiles
+  for all
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+drop policy if exists "Users manage own trades" on public.trades;
+create policy "Users manage own trades"
+  on public.trades
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+</pre>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: PLACE / EDIT TRADE MODAL                                     -->
+  <!-- ===================================================================== -->
+  <div id="tradeModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+    <div class="tl-card w-full max-w-lg p-6 shadow-2xl fade-in max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-4 border-b border-[#1E2836]">
+        <div>
+          <h3 id="tradeModalTitle" class="text-base font-bold text-white">Place New Trade</h3>
+          <p class="text-xs text-[#8B98A9]">Record trade parameters now &amp; confirm Win or Loss anytime.</p>
+        </div>
+        <button type="button" onclick="closeTradeModal()" class="p-1.5 rounded-lg text-[#8B98A9] hover:text-white hover:bg-[#1E2734] cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="tradeForm" onsubmit="handleSaveTrade(event)" class="mt-4 space-y-4">
+        <input type="hidden" id="editTradeId" value="" />
+
+        <!-- Market Category & Instrument -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Market Type</label>
+            <select id="tradeCategory" onchange="populateInstrumentDropdown()" class="tl-input w-full px-3 py-2.5 text-sm">
+              <option value="Volatility">Synthetic Volatilities</option>
+              <option value="Currency">Currencies (Forex)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Select Volatility / Pair</label>
+            <select id="tradeInstrument" required class="tl-input w-full px-3 py-2.5 text-sm"></select>
+          </div>
+        </div>
+
+        <!-- Direction (Buy/Sell) & Date -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Side / Direction</label>
+            <select id="tradeSide" class="tl-input w-full px-3 py-2.5 text-sm font-semibold">
+              <option value="Buy">Buy (Long)</option>
+              <option value="Sell">Sell (Short)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Trade Date</label>
+            <input type="date" id="tradeDate" required class="tl-input w-full px-3 py-2.5 text-sm" />
+          </div>
+        </div>
+
+        <!-- Amount Risked ($) & Profit Target ($) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Amount Risked ($)</label>
+            <input type="number" id="tradeRisk" required min="0.01" step="any" placeholder="50.00" oninput="updateLiveRRPreview()" class="tl-input w-full px-3 py-2.5 text-sm font-semibold text-red-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Profit Target ($)</label>
+            <input type="number" id="tradeTarget" required min="0.01" step="any" placeholder="150.00" oninput="updateLiveRRPreview()" class="tl-input w-full px-3 py-2.5 text-sm font-semibold text-[#22C55E]" />
+          </div>
+        </div>
+
+        <!-- Live Risk:Reward Preview Banner -->
+        <div class="flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#0D131C] border border-[#1E2836] text-xs">
+          <span class="text-[#8B98A9]">Planned Risk-to-Reward Ratio:</span>
+          <span id="modalRRPreview" class="font-bold text-[#22C55E]">1 : 3.00</span>
+        </div>
+
+        <!-- Entry & Exit Price (Optional) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Entry Price (Optional)</label>
+            <input type="number" id="tradeEntry" step="any" placeholder="e.g. 425180.50" class="tl-input w-full px-3 py-2.5 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Exit / TP Price (Optional)</label>
+            <input type="number" id="tradeExit" step="any" placeholder="e.g. 428900.00" class="tl-input w-full px-3 py-2.5 text-sm" />
+          </div>
+        </div>
+
+        <!-- Trade Outcome Status & Actual P&L Override -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Outcome Status</label>
+            <select id="tradeStatus" onchange="handleStatusSelectChange()" class="tl-input w-full px-3 py-2.5 text-sm font-semibold">
+              <option value="Pending">Pending (Open Trade)</option>
+              <option value="Win">Win (Target Hit)</option>
+              <option value="Loss">Loss (Stop Hit)</option>
+            </select>
+          </div>
+          <div id="customPnlWrapper" class="hidden">
+            <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Realized P&amp;L Amount ($)</label>
+            <input type="number" id="tradeCustomPnl" step="any" placeholder="Auto from Target/Risk" class="tl-input w-full px-3 py-2.5 text-sm font-bold" />
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Setup Notes (Optional)</label>
+          <input type="text" id="tradeNotes" placeholder="e.g. H1 order block + liquidity sweep on V75" class="tl-input w-full px-3 py-2 text-sm" />
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1E2836]">
+          <button type="button" onclick="closeTradeModal()" class="px-4 py-2 rounded-lg bg-[#1A2331] hover:bg-[#232F42] text-slate-300 text-xs sm:text-sm font-medium cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-[#22C55E] hover:bg-[#1EB054] text-[#07110B] text-xs sm:text-sm font-semibold transition cursor-pointer">
+            Save Trade
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: QUICK STARTING CAPITAL EDITOR                                -->
+  <!-- ===================================================================== -->
+  <div id="capitalModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75">
+    <div class="tl-card w-full max-w-sm p-6 shadow-2xl fade-in">
+      <h3 class="text-base font-bold text-white mb-1">Edit Starting Capital &amp; Mode</h3>
+      <p class="text-xs text-[#8B98A9] mb-4">Adjusting starting capital immediately updates your Gain % and Loss % across the dashboard.</p>
+      <form onsubmit="saveQuickCapital(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Account Type</label>
+          <select id="quickAccountMode" class="tl-input w-full px-3 py-2.5 text-sm">
+            <option value="Real">Real Account</option>
+            <option value="Demo">Demo Account</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#8B98A9] mb-1.5">Starting Capital ($)</label>
+          <input type="number" id="quickStartCapitalInput" required min="1" step="any" class="tl-input w-full px-3 py-2.5 text-sm font-bold" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeQuickCapitalModal()" class="px-3.5 py-2 rounded-lg bg-[#1A2331] text-slate-300 text-xs font-medium cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-[#22C55E] text-[#07110B] text-xs font-semibold cursor-pointer">Apply Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT APPLICATION LOGIC & SUPABASE INTEGRATION                   -->
+  <!-- ===================================================================== -->
+  <script>
+    // -----------------------------------------------------------------------
+    // 1. SUPABASE CONFIGURATION (Exact keys provided by user)
+    // -----------------------------------------------------------------------
+    const SUPABASE_URL = 'https://xfbyyywxzmebjyfpxapx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_4xs625OHywtAuYsyuuEcUQ_HEUZrhxT';
+
+    let supabaseClient = null;
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (err) {
+      console.warn('Supabase init warning:', err);
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. INSTRUMENTS CATALOG (Synthetic Volatilities & Currencies)
+    // -----------------------------------------------------------------------
+    const INSTRUMENTS = {
+      Volatility: [
+        'Volatility 75 Index',
+        'Volatility 100 Index',
+        'Volatility 50 Index',
+        'Volatility 25 Index',
+        'Volatility 10 Index',
+        'Volatility 75 (1s) Index',
+        'Volatility 100 (1s) Index',
+        'Volatility 250 (1s) Index',
+        'Boom 1000 Index',
+        'Boom 500 Index',
+        'Crash 1000 Index',
+        'Crash 500 Index',
+        'Step Index',
+        'Jump 25 Index',
+        'Jump 75 Index'
+      ],
+      Currency: [
+        'EUR/USD',
+        'GBP/JPY',
+        'XAU/USD',
+        'GBP/USD',
+        'USD/JPY',
+        'AUD/USD',
+        'USD/CAD',
+        'EUR/GBP',
+        'NZD/USD',
+        'USD/CHF',
+        'EUR/JPY'
+      ]
+    };
+
+    // -----------------------------------------------------------------------
+    // 3. APPLICATION STATE
+    // -----------------------------------------------------------------------
+    let appState = {
+      user: null,         // Supabase user or demo user object
+      isDemoSandbox: false,
+      profile: {
+        full_name: 'Pro Trader',
+        email: '',
+        account_type: 'Real',
+        starting_capital: 10000,
+        broker_name: 'Deriv / FX Prime',
+        avatar_url: 'https://placehold.co/120x120/1E293B/22C55E?text=TL'
+      },
+      trades: []
+    };
+
+    let equityChartInstance = null;
+    let donutChartInstance = null;
+
+    // -----------------------------------------------------------------------
+    // 4. SAMPLE INITIAL TRADES (Realistic Volatilities & Currencies)
+    // -----------------------------------------------------------------------
+    function getDefaultSampleTrades() {
+      return [
+        {
+          id: 'trd-101',
+          trade_date: '2025-05-14',
+          instrument: 'Volatility 75 Index',
+          category: 'Volatility',
+          side: 'Buy',
+          entry_price: 418250.00,
+          exit_price: 423100.00,
+          amount_risked: 200,
+          profit_target: 520,
+          status: 'Pending',
+          pnl: 0,
+          notes: 'H4 demand zone rejection, awaiting TP'
+        },
+        {
+          id: 'trd-102',
+          trade_date: '2025-05-13',
+          instrument: 'EUR/USD',
+          category: 'Currency',
+          side: 'Buy',
+          entry_price: 1.0842,
+          exit_price: 1.0891,
+          amount_risked: 100,
+          profit_target: 245,
+          status: 'Win',
+          pnl: 245,
+          notes: 'London session breakout'
+        },
+        {
+          id: 'trd-103',
+          trade_date: '2025-05-12',
+          instrument: 'GBP/JPY',
+          category: 'Currency',
+          side: 'Sell',
+          entry_price: 191.24,
+          exit_price: 190.87,
+          amount_risked: 80,
+          profit_target: 185,
+          status: 'Win',
+          pnl: 185,
+          notes: 'Bearish engulfing on 1H'
+        },
+        {
+          id: 'trd-104',
+          trade_date: '2025-05-11',
+          instrument: 'Volatility 100 Index',
+          category: 'Volatility',
+          side: 'Buy',
+          entry_price: 1842.50,
+          exit_price: 1819.00,
+          amount_risked: 140,
+          profit_target: 320,
+          status: 'Loss',
+          pnl: -140,
+          notes: 'Stopped out on spike'
+        },
+        {
+          id: 'trd-105',
+          trade_date: '2025-05-09',
+          instrument: 'XAU/USD',
+          category: 'Currency',
+          side: 'Buy',
+          entry_price: 2341.50,
+          exit_price: 2358.20,
+          amount_risked: 175,
+          profit_target: 420,
+          status: 'Win',
+          pnl: 420,
+          notes: 'Gold trend continuation'
+        },
+        {
+          id: 'trd-106',
+          trade_date: '2025-05-06',
+          instrument: 'Boom 1000 Index',
+          category: 'Volatility',
+          side: 'Buy',
+          entry_price: 14210.4,
+          exit_price: 14385.0,
+          amount_risked: 120,
+          profit_target: 310,
+          status: 'Win',
+          pnl: 310,
+          notes: 'Spike catch at structural support'
+        }
+      ];
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. TOAST NOTIFICATIONS (Non-blocking UI messages)
+    // -----------------------------------------------------------------------
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const colors = type === 'error'
+        ? 'bg-[#1D1418] border-red-500/40 text-red-200'
+        : type === 'info'
+        ? 'bg-[#131C2A] border-sky-500/40 text-sky-200'
+        : 'bg-[#11211B] border-emerald-500/40 text-emerald-200';
+
+      const dotColor = type === 'error' ? 'bg-red-500' : type === 'info' ? 'bg-sky-400' : 'bg-[#22C55E]';
+
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-medium fade-in ${colors}`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${dotColor} shrink-0"></span>
+        <span class="flex-1">${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 260);
+      }, 3400);
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. AUTHENTICATION FLOW (SUPABASE AUTH + DEMO FALLBACK)
+    // -----------------------------------------------------------------------
+    function switchAuthMode(mode) {
+      const signInForm = document.getElementById('signInForm');
+      const signUpForm = document.getElementById('signUpForm');
+      const tabSignIn = document.getElementById('tabSignIn');
+      const tabSignUp = document.getElementById('tabSignUp');
+
+      if (mode === 'signin') {
+        signInForm.classList.remove('hidden');
+        signUpForm.classList.add('hidden');
+        tabSignIn.className = 'py-2 text-sm font-medium rounded-md bg-[#1E2734] text-white transition';
+        tabSignUp.className = 'py-2 text-sm font-medium rounded-md text-[#8B98A9] hover:text-white transition';
+      } else {
+        signInForm.classList.add('hidden');
+        signUpForm.classList.remove('hidden');
+        tabSignUp.className = 'py-2 text-sm font-medium rounded-md bg-[#1E2734] text-white transition';
+        tabSignIn.className = 'py-2 text-sm font-medium rounded-md text-[#8B98A9] hover:text-white transition';
+      }
+    }
+
+    async function handleSignIn(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('btnSignIn');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client unavailable');
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        appState.user = data.user;
+        appState.isDemoSandbox = false;
+        await loadUserWorkspace();
+        showToast('Signed in to TradeLog');
+      } catch (err) {
+        showToast(err.message || 'Sign in failed. Check email/password or use Demo Workspace.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In to Dashboard';
+      }
+    }
+
+    async function handleSignUp(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const accountType = document.getElementById('regAccountType').value;
+      const startingCapital = parseFloat(document.getElementById('regCapital').value) || 1000;
+
+      const btn = document.getElementById('btnSignUp');
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client unavailable');
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              account_type: accountType,
+              starting_capital: startingCapital
+            }
+          }
+        });
+        if (error) throw error;
+
+        if (data.session && data.user) {
+          appState.user = data.user;
+          appState.isDemoSandbox = false;
+          appState.profile = {
+            full_name: fullName,
+            email,
+            account_type: accountType,
+            starting_capital: startingCapital,
+            broker_name: 'Deriv / FX Broker',
+            avatar_url: `https://placehold.co/120x120/1E293B/22C55E?text=${encodeURIComponent(fullName.slice(0, 2).toUpperCase())}`
+          };
+          await persistProfileToStorageAndCloud();
+          await loadUserWorkspace();
+          showToast('Account created! Welcome to TradeLog.');
+        } else {
+          showToast('Account created! Check your email to confirm, or sign in now.', 'info');
+          switchAuthMode('signin');
+          document.getElementById('loginEmail').value = email;
+        }
+      } catch (err) {
+        showToast(err.message || 'Could not create account.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Trader Account';
+      }
+    }
+
+    function enterInstantWorkspace() {
+      appState.isDemoSandbox = true;
+      appState.user = { id: 'demo-local-trader', email: 'trader@tradelog.app' };
+      const savedLocal = localStorage.getItem('tradelog_demo_state');
+      if (savedLocal) {
+        try {
+          const parsed = JSON.parse(savedLocal);
+          appState.profile = { ...appState.profile, ...parsed.profile };
+          appState.trades = parsed.trades || getDefaultSampleTrades();
+        } catch (_) {
+          appState.trades = getDefaultSampleTrades();
+        }
+      } else {
+        appState.trades = getDefaultSampleTrades();
+      }
+      enterAppUI();
+      showToast('Demo Workspace active — all changes saved automatically');
+    }
+
+    async function handleLogout() {
+      try {
+        if (supabaseClient && !appState.isDemoSandbox) {
+          await supabaseClient.auth.signOut();
+        }
+      } catch (_) {}
+      appState.user = null;
+      appState.isDemoSandbox = false;
+      document.getElementById('appShell').classList.add('hidden');
+      document.getElementById('authScreen').classList.remove('hidden');
+      showToast('Signed out securely', 'info');
+    }
+
+    // -----------------------------------------------------------------------
+    // 7. DATA PERSISTENCE (SUPABASE CLOUD + LOCALSTORAGE RESILIENT SYNC)
+    // -----------------------------------------------------------------------
+    function getStorageKey() {
+      const uid = appState.user?.id || 'demo';
+      return `tradelog_data_${uid}`;
+    }
+
+    async function loadUserWorkspace() {
+      const uid = appState.user.id;
+      const meta = appState.user.user_metadata || {};
+
+      // Load local cache first for zero-latency UI
+      const cachedRaw = localStorage.getItem(getStorageKey());
+      if (cachedRaw) {
+        try {
+          const cached = JSON.parse(cachedRaw);
+          appState.profile = { ...appState.profile, ...cached.profile };
+          appState.trades = Array.isArray(cached.trades) ? cached.trades : [];
+        } catch (_) {}
+      } else {
+        appState.profile.full_name = meta.full_name || appState.user.email?.split('@')[0] || 'Trader';
+        appState.profile.email = appState.user.email || '';
+        appState.profile.account_type = meta.account_type || 'Real';
+        appState.profile.starting_capital = Number(meta.starting_capital) || 1000;
+        if (meta.avatar_url) appState.profile.avatar_url = meta.avatar_url;
+        appState.trades = getDefaultSampleTrades();
+      }
+
+      // Attempt live sync from Supabase tables (`profiles` and `trades`)
+      if (supabaseClient && !appState.isDemoSandbox) {
+        try {
+          const { data: profData, error: profErr } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .maybeSingle();
+
+          if (!profErr && profData) {
+            appState.profile = {
+              ...appState.profile,
+              full_name: profData.full_name || appState.profile.full_name,
+              account_type: profData.account_type || appState.profile.account_type,
+              starting_capital: Number(profData.starting_capital) || appState.profile.starting_capital,
+              broker_name: profData.broker_name || appState.profile.broker_name,
+              avatar_url: profData.avatar_url || appState.profile.avatar_url
+            };
+          }
+
+          const { data: tradesData, error: tradesErr } = await supabaseClient
+            .from('trades')
+            .select('*')
+            .eq('user_id', uid)
+            .order('trade_date', { ascending: false });
+
+          if (!tradesErr && Array.isArray(tradesData) && tradesData.length > 0) {
+            appState.trades = tradesData.map(t => ({
+              ...t,
+              entry_price: t.entry_price !== null ? Number(t.entry_price) : null,
+              exit_price: t.exit_price !== null ? Number(t.exit_price) : null,
+              amount_risked: Number(t.amount_risked) || 0,
+              profit_target: Number(t.profit_target) || 0,
+              pnl: Number(t.pnl) || 0
+            }));
+          }
+          document.getElementById('sidebarSyncStatus').textContent = '● Supabase Connected';
+        } catch (err) {
+          document.getElementById('sidebarSyncStatus').textContent = '● Local + Cloud Ready';
+        }
+      } else {
+        document.getElementById('sidebarSyncStatus').textContent = '● Local Demo Mode';
+      }
+
+      saveLocalCache();
+      enterAppUI();
+    }
+
+    function saveLocalCache() {
+      if (appState.isDemoSandbox) {
+        localStorage.setItem('tradelog_demo_state', JSON.stringify({
+          profile: appState.profile,
+          trades: appState.trades
+        }));
+      } else {
+        localStorage.setItem(getStorageKey(), JSON.stringify({
+          profile: appState.profile,
+          trades: appState.trades
+        }));
+      }
+    }
+
+    async function persistProfileToStorageAndCloud() {
+      saveLocalCache();
+      if (supabaseClient && !appState.isDemoSandbox && appState.user) {
+        try {
+          await supabaseClient.auth.updateUser({
+            data: {
+              full_name: appState.profile.full_name,
+              account_type: appState.profile.account_type,
+              starting_capital: appState.profile.starting_capital,
+              avatar_url: appState.profile.avatar_url
+            }
+          });
+          await supabaseClient.from('profiles').upsert({
+            id: appState.user.id,
+            full_name: appState.profile.full_name,
+            account_type: appState.profile.account_type,
+            starting_capital: appState.profile.starting_capital,
+            broker_name: appState.profile.broker_name,
+            avatar_url: appState.profile.avatar_url,
+            updated_at: new Date().toISOString()
+          });
+        } catch (_) {}
+      }
+    }
+
+    async function syncTradeToCloud(tradeObj) {
+      saveLocalCache();
+      if (supabaseClient && !appState.isDemoSandbox && appState.user) {
+        try {
+          await supabaseClient.from('trades').upsert({
+            id: tradeObj.id,
+            user_id: appState.user.id,
+            trade_date: tradeObj.trade_date,
+            instrument: tradeObj.instrument,
+            category: tradeObj.category,
+            side: tradeObj.side,
+            entry_price: tradeObj.entry_price,
+            exit_price: tradeObj.exit_price,
+            amount_risked: tradeObj.amount_risked,
+            profit_target: tradeObj.profit_target,
+            status: tradeObj.status,
+            pnl: tradeObj.pnl,
+            notes: tradeObj.notes || ''
+          });
+        } catch (_) {}
+      }
+    }
+
+    async function deleteTradeFromCloud(tradeId) {
+      saveLocalCache();
+      if (supabaseClient && !appState.isDemoSandbox && appState.user) {
+        try {
+          await supabaseClient.from('trades').delete().eq('id', tradeId).eq('user_id', appState.user.id);
+        } catch (_) {}
+      }
+    }
+
+    function enterAppUI() {
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('appShell').classList.remove('hidden');
+      populateInstrumentDropdown();
+      renderAllViews();
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. NAVIGATION & MOBILE SIDEBAR
+    // -----------------------------------------------------------------------
+    function navigateTo(viewName) {
+      const views = ['dashboard', 'tradelog', 'analytics', 'brokers', 'settings'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (el) el.classList.toggle('hidden', v !== viewName);
+        if (navBtn) {
+          navBtn.className = v === viewName
+            ? 'nav-item-active w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer'
+            : 'nav-item-inactive w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-[14px] transition cursor-pointer';
+        }
+      });
+
+      const titles = {
+        dashboard: 'Overview',
+        tradelog: 'Trade Log',
+        analytics: 'Performance Analytics',
+        brokers: 'Brokers & Capital',
+        settings: 'Account Settings'
+      };
+      document.getElementById('pageHeaderTitle').textContent = titles[viewName] || 'Overview';
+
+      // Close mobile sidebar if open
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileSidebarBackdrop');
+      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+
+      renderAllViews();
+    }
+
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileSidebarBackdrop');
+      sidebar.classList.toggle('-translate-x-full');
+      backdrop.classList.toggle('hidden');
+    }
+
+    // -----------------------------------------------------------------------
+    // 9. PROFILE AVATAR UPLOAD & CREDENTIALS MANAGEMENT
+    // -----------------------------------------------------------------------
+    function handleAvatarUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        // Resize image using an offscreen canvas so it stays lightweight for Supabase metadata & localStorage
+        const img = new Image();
+        img.onload = async function () {
+          const canvas = document.createElement('canvas');
+          const maxSize = 180;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxSize) { h *= maxSize / w; w = maxSize; }
+          } else {
+            if (h > maxSize) { w *= maxSize / h; h = maxSize; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+          appState.profile.avatar_url = optimizedDataUrl;
+          await persistProfileToStorageAndCloud();
+          renderAllViews();
+          showToast('Profile photo updated!');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function updateProfileName(e) {
+      e.preventDefault();
+      const newName = document.getElementById('settingsDisplayName').value.trim();
+      if (!newName) return;
+      appState.profile.full_name = newName;
+      await persistProfileToStorageAndCloud();
+      renderAllViews();
+      showToast('Trader profile updated');
+    }
+
+    async function updateUserCredentials(e) {
+      e.preventDefault();
+      if (!appState.user) return;
+
+      const newEmail = document.getElementById('settingsEmailInput').value.trim();
+      const newPassword = document.getElementById('settingsNewPassword').value;
+
+      if (appState.isDemoSandbox) {
+        if (newEmail) appState.user.email = newEmail;
+        document.getElementById('settingsNewPassword').value = '';
+        showToast('Demo session credentials updated locally');
+        return;
+      }
+
+      try {
+        const updates = {};
+        if (newEmail && newEmail !== appState.user.email) updates.email = newEmail;
+        if (newPassword && newPassword.length >= 6) updates.password = newPassword;
+
+        if (Object.keys(updates).length === 0) {
+          showToast('Enter a new email or password to update.', 'info');
+          return;
+        }
+
+        const { data, error } = await supabaseClient.auth.updateUser(updates);
+        if (error) throw error;
+        if (data?.user) appState.user = data.user;
+        document.getElementById('settingsNewPassword').value = '';
+        showToast('Login credentials updated securely via Supabase!');
+      } catch (err) {
+        showToast(err.message || 'Failed to update credentials.', 'error');
+      }
+    }
+
+    function copySupabaseSql() {
+      const sqlText = document.getElementById('supabaseSqlBlock').innerText;
+      const textarea = document.createElement('textarea');
+      textarea.value = sqlText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('Supabase SQL schema copied to clipboard!');
+    }
+
+    // -----------------------------------------------------------------------
+    // 10. ACCOUNT MODE (REAL/DEMO) & STARTING CAPITAL CONTROLS
+    // -----------------------------------------------------------------------
+    async function toggleAccountMode() {
+      appState.profile.account_type = appState.profile.account_type === 'Real' ? 'Demo' : 'Real';
+      await persistProfileToStorageAndCloud();
+      renderAllViews();
+      showToast(`Switched to ${appState.profile.account_type.toUpperCase()} Account`);
+    }
+
+    function openQuickCapitalModal() {
+      document.getElementById('quickAccountMode').value = appState.profile.account_type;
+      document.getElementById('quickStartCapitalInput').value = appState.profile.starting_capital;
+      const modal = document.getElementById('capitalModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeQuickCapitalModal() {
+      const modal = document.getElementById('capitalModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function saveQuickCapital(e) {
+      e.preventDefault();
+      const mode = document.getElementById('quickAccountMode').value;
+      const cap = parseFloat(document.getElementById('quickStartCapitalInput').value);
+      if (isNaN(cap) || cap <= 0) return;
+
+      appState.profile.account_type = mode;
+      appState.profile.starting_capital = cap;
+      await persistProfileToStorageAndCloud();
+      closeQuickCapitalModal();
+      renderAllViews();
+      showToast(`Starting capital updated to $${cap.toLocaleString()}`);
+    }
+
+    async function saveAccountSettings(e) {
+      e.preventDefault();
+      const selectedMode = document.querySelector('input[name="accountModeRadio"]:checked')?.value || 'Real';
+      const cap = parseFloat(document.getElementById('brokerStartingCapitalInput').value);
+      const broker = document.getElementById('brokerNameInput').value.trim();
+
+      if (isNaN(cap) || cap <= 0) {
+        showToast('Please enter a valid starting capital.', 'error');
+        return;
+      }
+
+      appState.profile.account_type = selectedMode;
+      appState.profile.starting_capital = cap;
+      appState.profile.broker_name = broker || 'Deriv / FX Broker';
+      await persistProfileToStorageAndCloud();
+      renderAllViews();
+      showToast('Account settings & capital saved!');
+    }
+
+    async function resetToSampleTrades() {
+      appState.trades = getDefaultSampleTrades();
+      saveLocalCache();
+      renderAllViews();
+      showToast('Sample Volatilities & Forex trades loaded');
+    }
+
+    // -----------------------------------------------------------------------
+    // 11. TRADE PLACEMENT, EDITING, CONFIRM WIN / LOSS, & DELETION
+    // -----------------------------------------------------------------------
+    function populateInstrumentDropdown(selectedValue = null) {
+      const cat = document.getElementById('tradeCategory').value;
+      const select = document.getElementById('tradeInstrument');
+      const list = INSTRUMENTS[cat] || INSTRUMENTS.Volatility;
+      select.innerHTML = list.map(item => `<option value="${item}">${item}</option>`).join('');
+      if (selectedValue && list.includes(selectedValue)) {
+        select.value = selectedValue;
+      }
+    }
+
+    function updateLiveRRPreview() {
+      const risk = parseFloat(document.getElementById('tradeRisk').value) || 0;
+      const target = parseFloat(document.getElementById('tradeTarget').value) || 0;
+      const preview = document.getElementById('modalRRPreview');
+      if (risk > 0 && target > 0) {
+        const ratio = (target / risk).toFixed(2);
+        preview.textContent = `1 : ${ratio}`;
+      } else {
+        preview.textContent = '1 : 0.00';
+      }
+    }
+
+    function handleStatusSelectChange() {
+      const status = document.getElementById('tradeStatus').value;
+      const wrapper = document.getElementById('customPnlWrapper');
+      if (status === 'Pending') {
+        wrapper.classList.add('hidden');
+      } else {
+        wrapper.classList.remove('hidden');
+      }
+    }
+
+    function openTradeModal(tradeId = null) {
+      const modal = document.getElementById('tradeModal');
+      const title = document.getElementById('tradeModalTitle');
+      document.getElementById('tradeForm').reset();
+
+      if (tradeId) {
+        const trade = appState.trades.find(t => t.id === tradeId);
+        if (!trade) return;
+        title.textContent = `Edit Trade — ${trade.instrument}`;
+        document.getElementById('editTradeId').value = trade.id;
+        document.getElementById('tradeCategory').value = trade.category;
+        populateInstrumentDropdown(trade.instrument);
+        document.getElementById('tradeSide').value = trade.side;
+        document.getElementById('tradeDate').value = trade.trade_date;
+        document.getElementById('tradeRisk').value = trade.amount_risked;
+        document.getElementById('tradeTarget').value = trade.profit_target;
+        document.getElementById('tradeEntry').value = trade.entry_price ?? '';
+        document.getElementById('tradeExit').value = trade.exit_price ?? '';
+        document.getElementById('tradeStatus').value = trade.status;
+        document.getElementById('tradeCustomPnl').value = trade.status !== 'Pending' ? Math.abs(trade.pnl) : '';
+        document.getElementById('tradeNotes').value = trade.notes || '';
+      } else {
+        title.textContent = 'Place New Trade';
+        document.getElementById('editTradeId').value = '';
+        document.getElementById('tradeCategory').value = 'Volatility';
+        populateInstrumentDropdown();
+        document.getElementById('tradeDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('tradeStatus').value = 'Pending';
+      }
+
+      handleStatusSelectChange();
+      updateLiveRRPreview();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeTradeModal() {
+      const modal = document.getElementById('tradeModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function handleSaveTrade(e) {
+      e.preventDefault();
+      const existingId = document.getElementById('editTradeId').value;
+      const category = document.getElementById('tradeCategory').value;
+      const instrument = document.getElementById('tradeInstrument').value;
+      const side = document.getElementById('tradeSide').value;
+      const trade_date = document.getElementById('tradeDate').value;
+      const amount_risked = parseFloat(document.getElementById('tradeRisk').value) || 0;
+      const profit_target = parseFloat(document.getElementById('tradeTarget').value) || 0;
+      const entryRaw = document.getElementById('tradeEntry').value;
+      const exitRaw = document.getElementById('tradeExit').value;
+      const status = document.getElementById('tradeStatus').value;
+      const customPnlRaw = document.getElementById('tradeCustomPnl').value;
+      const notes = document.getElementById('tradeNotes').value.trim();
+
+      let pnl = 0;
+      if (status === 'Win') {
+        const winAmt = customPnlRaw !== '' ? Math.abs(parseFloat(customPnlRaw)) : profit_target;
+        pnl = Number(winAmt.toFixed(2));
+      } else if (status === 'Loss') {
+        const lossAmt = customPnlRaw !== '' ? Math.abs(parseFloat(customPnlRaw)) : amount_risked;
+        pnl = -Number(lossAmt.toFixed(2));
+      }
+
+      const tradeObj = {
+        id: existingId || `trd-${Date.now()}`,
+        trade_date,
+        instrument,
+        category,
+        side,
+        entry_price: entryRaw !== '' ? parseFloat(entryRaw) : null,
+        exit_price: exitRaw !== '' ? parseFloat(exitRaw) : null,
+        amount_risked,
+        profit_target,
+        status,
+        pnl,
+        notes
+      };
+
+      if (existingId) {
+        const idx = appState.trades.findIndex(t => t.id === existingId);
+        if (idx !== -1) appState.trades[idx] = tradeObj;
+        showToast(`Updated ${instrument} trade`);
+      } else {
+        appState.trades.unshift(tradeObj);
+        showToast(status === 'Pending'
+          ? `Placed ${instrument} trade — confirm Win or Loss when closed`
+          : `Recorded ${instrument} (${status})`);
+      }
+
+      await syncTradeToCloud(tradeObj);
+      closeTradeModal();
+      renderAllViews();
+    }
+
+    // One-click Confirm Win or Confirm Loss directly from any table row
+    async function confirmTradeOutcome(tradeId, outcome) {
+      const idx = appState.trades.findIndex(t => t.id === tradeId);
+      if (idx === -1) return;
+
+      const t = appState.trades[idx];
+      t.status = outcome;
+      if (outcome === 'Win') {
+        t.pnl = Number(Math.abs(t.profit_target || t.amount_risked).toFixed(2));
+      } else {
+        t.pnl = -Number(Math.abs(t.amount_risked).toFixed(2));
+      }
+
+      await syncTradeToCloud(t);
+      renderAllViews();
+      showToast(
+        outcome === 'Win'
+          ? `Confirmed WIN on ${t.instrument}: +$${t.pnl.toLocaleString()}`
+          : `Confirmed LOSS on ${t.instrument}: -$${Math.abs(t.pnl).toLocaleString()}`,
+        outcome === 'Win' ? 'success' : 'error'
+      );
+    }
+
+    async function deleteTrade(tradeId) {
+      const target = appState.trades.find(t => t.id === tradeId);
+      appState.trades = appState.trades.filter(t => t.id !== tradeId);
+      await deleteTradeFromCloud(tradeId);
+      renderAllViews();
+      showToast(`Deleted ${target ? target.instrument : 'trade'} record`, 'info');
+    }
+
+    // -----------------------------------------------------------------------
+    // 12. METRICS CALCULATION & DASHBOARD RENDERING
+    // -----------------------------------------------------------------------
+    function formatCurrency(val) {
+      const num = Number(val) || 0;
+      const absStr = Math.abs(num).toLocaleString('en-US', {
+        minimumFractionDigits: num % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+      });
+      return num < 0 ? `-$${absStr}` : `+$${absStr}`;
+    }
+
+    function formatPlainMoney(val) {
+      const num = Number(val) || 0;
+      return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDisplayDate(isoDate) {
+      if (!isoDate) return '-';
+      const parts = isoDate.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return isoDate;
+    }
+
+    function calculateMetrics() {
+      const startCap = Number(appState.profile.starting_capital) || 1000;
+      const allTrades = appState.trades;
+      const closedTrades = allTrades.filter(t => t.status === 'Win' || t.status === 'Loss');
+      const pendingTrades = allTrades.filter(t => t.status === 'Pending');
+      const wins = closedTrades.filter(t => t.status === 'Win');
+      const losses = closedTrades.filter(t => t.status === 'Loss');
+
+      const totalTradesCount = allTrades.length;
+      const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
+      const lossRate = closedTrades.length > 0 ? (losses.length / closedTrades.length) * 100 : 0;
+
+      const grossWon = wins.reduce((acc, t) => acc + Math.max(0, Number(t.pnl) || 0), 0);
+      const grossLost = losses.reduce((acc, t) => acc + Math.abs(Number(t.pnl) || 0), 0);
+      const netPnl = closedTrades.reduce((acc, t) => acc + (Number(t.pnl) || 0), 0);
+      const currentEquity = startCap + netPnl;
+
+      const gainPct = startCap > 0 ? (grossWon / startCap) * 100 : 0;
+      const lostPct = startCap > 0 ? (grossLost / startCap) * 100 : 0;
+      const netReturnPct = startCap > 0 ? (netPnl / startCap) * 100 : 0;
+
+      // Average Risk:Reward across all trades with valid risk & target
+      const rrList = allTrades
+        .filter(t => Number(t.amount_risked) > 0 && Number(t.profit_target) > 0)
+        .map(t => Number(t.profit_target) / Number(t.amount_risked));
+      const avgRR = rrList.length > 0
+        ? rrList.reduce((a, b) => a + b, 0) / rrList.length
+        : 0;
+
+      const profitFactor = grossLost > 0 ? (grossWon / grossLost) : (grossWon > 0 ? grossWon : 0);
+
+      return {
+        startCap,
+        currentEquity,
+        totalTradesCount,
+        closedTrades,
+        pendingTrades,
+        wins,
+        losses,
+        winRate,
+        lossRate,
+        grossWon,
+        grossLost,
+        netPnl,
+        gainPct,
+        lostPct,
+        netReturnPct,
+        avgRR,
+        profitFactor
+      };
+    }
+
+    function renderAllViews() {
+      const m = calculateMetrics();
+      const prof = appState.profile;
+
+      // 1. Update Sidebar & Header Identity
+      const isReal = prof.account_type === 'Real';
+      const badgeClass = isReal
+        ? 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/15 text-[#22C55E] border border-emerald-500/30 hover:bg-emerald-500/25 transition cursor-pointer'
+        : 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition cursor-pointer';
+
+      const sbBadge = document.getElementById('sidebarAccountBadge');
+      sbBadge.textContent = prof.account_type.toUpperCase();
+      sbBadge.className = badgeClass;
+
+      const topPill = document.getElementById('topAccountModePill');
+      topPill.textContent = prof.account_type.toUpperCase();
+      topPill.className = isReal
+        ? 'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-[#22C55E]'
+        : 'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-400';
+
+      document.getElementById('sidebarStartCap').textContent = formatPlainMoney(m.startCap);
+      document.getElementById('topStartCapitalText').textContent = formatPlainMoney(m.startCap);
+      document.getElementById('sidebarCurrentEquity').textContent = formatPlainMoney(m.currentEquity);
+      document.getElementById('sidebarCurrentEquity').className = `text-xs font-bold ${m.currentEquity >= m.startCap ? 'text-[#22C55E]' : 'text-[#EF4444]'}`;
+
+      document.getElementById('topGainPctText').textContent = `+${m.gainPct.toFixed(2)}%`;
+      document.getElementById('topLossPctText').textContent = `-${m.lostPct.toFixed(2)}%`;
+
+      document.getElementById('sidebarUserName').textContent = prof.full_name || 'Pro Trader';
+      document.getElementById('sidebarAvatarImg').src = prof.avatar_url;
+      document.getElementById('headerAvatarImg').src = prof.avatar_url;
+      document.getElementById('settingsAvatarPreview').src = prof.avatar_url;
+
+      // Pending count badge in sidebar
+      const pendingBadge = document.getElementById('pendingBadge');
+      if (m.pendingTrades.length > 0) {
+        pendingBadge.textContent = m.pendingTrades.length;
+        pendingBadge.classList.remove('hidden');
+      } else {
+        pendingBadge.classList.add('hidden');
+      }
+
+      // 2. Dashboard KPI Cards
+      document.getElementById('kpiTotalTrades').textContent = m.totalTradesCount;
+      document.getElementById('kpiPendingNote').textContent = m.pendingTrades.length > 0 ? `(${m.pendingTrades.length} open)` : '';
+      document.getElementById('kpiWinRate').textContent = `${m.winRate.toFixed(1)}%`;
+      document.getElementById('kpiLossRateSub').textContent = `${m.lossRate.toFixed(1)}% L`;
+
+      const pnlEl = document.getElementById('kpiTotalPnl');
+      pnlEl.textContent = formatCurrency(m.netPnl);
+      pnlEl.className = `text-2xl font-bold tracking-tight mt-0.5 ${m.netPnl >= 0 ? 'text-white' : 'text-[#EF4444]'}`;
+
+      const netPctEl = document.getElementById('kpiNetReturnPct');
+      netPctEl.textContent = `${m.netReturnPct >= 0 ? '+' : ''}${m.netReturnPct.toFixed(1)}%`;
+      netPctEl.className = `text-xs font-semibold ${m.netReturnPct >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`;
+
+      document.getElementById('kpiAvgRR').textContent = `1:${m.avgRR.toFixed(1)}`;
+
+      document.getElementById('chartGainPct').textContent = `+${m.gainPct.toFixed(2)}%`;
+      document.getElementById('chartLostPct').textContent = `-${m.lostPct.toFixed(2)}%`;
+
+      // 3. Render Charts
+      renderEquityCurveChart(m);
+      renderWinLossDonutChart(m);
+
+      // 4. Render Tables
+      renderDashboardTradesTable();
+      renderFullTradeLogTable();
+
+      // 5. Render Analytics View
+      renderAnalyticsView(m);
+
+      // 6. Populate Brokers & Settings Inputs
+      const radioMatch = document.querySelector(`input[name="accountModeRadio"][value="${prof.account_type}"]`);
+      if (radioMatch) radioMatch.checked = true;
+      document.getElementById('brokerStartingCapitalInput').value = m.startCap;
+      document.getElementById('brokerNameInput').value = prof.broker_name || '';
+      document.getElementById('brokerSummaryType').textContent = prof.account_type.toUpperCase();
+      document.getElementById('brokerSummaryType').className = isReal ? 'font-bold text-[#22C55E]' : 'font-bold text-amber-400';
+      document.getElementById('brokerSummaryStart').textContent = formatPlainMoney(m.startCap);
+      document.getElementById('brokerSummaryPnl').textContent = formatCurrency(m.netPnl);
+      document.getElementById('brokerSummaryPnl').className = `font-semibold ${m.netPnl >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`;
+      document.getElementById('brokerSummaryEquity').textContent = formatPlainMoney(m.currentEquity);
+
+      document.getElementById('settingsDisplayName').value = prof.full_name || '';
+      document.getElementById('settingsEmailInput').value = appState.user?.email || '';
+    }
+
+    // -----------------------------------------------------------------------
+    // 13. CHARTS (EQUITY CURVE + WIN/LOSS DONUT MATCHING REFERENCE IMAGE)
+    // -----------------------------------------------------------------------
+    function renderEquityCurveChart(m) {
+      const ctx = document.getElementById('equityCurveCanvas');
+      if (!ctx) return;
+
+      // Sort closed trades chronologically to build equity progression
+      const chronological = [...m.closedTrades].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
+      let runningEquity = m.startCap;
+      const labels = ['Start'];
+      const values = [runningEquity];
+
+      chronological.forEach((t, index) => {
+        runningEquity += Number(t.pnl) || 0;
+        labels.push(formatDisplayDate(t.trade_date).slice(0, 5) || `#${index + 1}`);
+        values.push(Number(runningEquity.toFixed(2)));
+      });
+
+      if (values.length === 1) {
+        labels.push('Current');
+        values.push(m.startCap);
+      }
+
+      if (equityChartInstance) {
+        equityChartInstance.destroy();
+      }
+
+      const canvasCtx = ctx.getContext('2d');
+      const gradient = canvasCtx.createLinearGradient(0, 0, 0, 230);
+      gradient.addColorStop(0, 'rgba(34, 197, 94, 0.42)');
+      gradient.addColorStop(0.75, 'rgba(34, 197, 94, 0.08)');
+      gradient.addColorStop(1, 'rgba(34, 197, 94, 0.0)');
+
+      equityChartInstance = new Chart(canvasCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Account Equity ($)',
+            data: values,
+            borderColor: '#22C55E',
+            borderWidth: 2.5,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.42,
+            pointRadius: values.length <= 12 ? 3 : 0,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#22C55E',
+            pointBorderColor: '#0B1018',
+            pointBorderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0E1520',
+              borderColor: '#243144',
+              borderWidth: 1,
+              titleColor: '#94A3B8',
+              bodyColor: '#F8FAFC',
+              padding: 10,
+              callbacks: {
+                label: (context) => ` Equity: $${Number(context.parsed.y).toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                color: 'rgba(148, 163, 184, 0.08)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#7C8B9E',
+                font: { size: 11, family: 'Inter' },
+                maxTicksLimit: 7
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(148, 163, 184, 0.08)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#7C8B9E',
+                font: { size: 11, family: 'Inter' },
+                callback: (val) => '$' + Number(val).toLocaleString()
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderWinLossDonutChart(m) {
+      const ctx = document.getElementById('winLossDonutCanvas');
+      if (!ctx) return;
+
+      const winsCount = m.wins.length;
+      const lossesCount = m.losses.length;
+      const total = winsCount + lossesCount;
+
+      const winPct = total > 0 ? Math.round((winsCount / total) * 100) : 0;
+      const lossPct = total > 0 ? 100 - winPct : 0;
+
+      document.getElementById('donutWinsPctText').textContent = `${winPct}%`;
+      document.getElementById('donutLossesPctText').textContent = `${lossPct}%`;
+
+      if (donutChartInstance) {
+        donutChartInstance.destroy();
+      }
+
+      const dataValues = total > 0 ? [lossesCount, winsCount] : [0, 1];
+      const bgColors = total > 0 ? ['#EF4444', '#22C55E'] : ['#1E2836', '#1E2836'];
+
+      donutChartInstance = new Chart(ctx.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Losses', 'Wins'],
+          datasets: [{
+            data: dataValues,
+            backgroundColor: bgColors,
+            borderColor: '#131A24',
+            borderWidth: 3,
+            hoverOffset: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '64%',
+          rotation: 0,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: total > 0,
+              backgroundColor: '#0E1520',
+              borderColor: '#243144',
+              borderWidth: 1,
+              callbacks: {
+                label: (c) => ` ${c.label}: ${c.parsed} trades`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // 14. TABLES RENDERING (DASHBOARD + FULL TRADE LOG)
+    // -----------------------------------------------------------------------
+    function buildTradeRowHtml(t, compact = true) {
+      const sideColor = t.side === 'Buy' ? 'text-[#22C55E]' : 'text-[#EF4444]';
+      const entryDisplay = t.entry_price !== null && t.entry_price !== '' ? t.entry_price : '—';
+      const exitDisplay = t.exit_price !== null && t.exit_price !== '' ? t.exit_price : `TP: $${t.profit_target}`;
+
+      let statusPill = '';
+      if (t.status === 'Pending') {
+        statusPill = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25">● Open</span>`;
+      } else if (t.status === 'Win') {
+        statusPill = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/15 text-[#22C55E]">Win</span>`;
+      } else {
+        statusPill = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-500/15 text-[#EF4444]">Loss</span>`;
+      }
+
+      const pnlText = t.status === 'Pending'
+        ? `<span class="text-xs text-[#8B98A9]">Risk $${t.amount_risked}</span>`
+        : `<span class="font-semibold ${t.pnl >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}">${formatCurrency(t.pnl)}</span>`;
+
+      // Confirm Win / Loss quick buttons so user only needs 1 click to confirm outcome
+      const confirmControls = `
+        <div class="inline-flex items-center justify-end gap-1.5">
+          <button type="button" onclick="confirmTradeOutcome('${t.id}', 'Win')" title="Confirm Win (+$${t.profit_target})" class="px-2 py-1 rounded text-[11px] font-semibold transition cursor-pointer ${t.status === 'Win' ? 'bg-[#22C55E] text-[#07110B]' : 'bg-emerald-500/15 text-[#22C55E] hover:bg-[#22C55E] hover:text-[#07110B]'}">
+            Win
+          </button>
+          <button type="button" onclick="confirmTradeOutcome('${t.id}', 'Loss')" title="Confirm Loss (-$${t.amount_risked})" class="px-2 py-1 rounded text-[11px] font-semibold transition cursor-pointer ${t.status === 'Loss' ? 'bg-[#EF4444] text-white' : 'bg-red-500/15 text-[#EF4444] hover:bg-[#EF4444] hover:text-white'}">
+            Loss
+          </button>
+          <button type="button" onclick="openTradeModal('${t.id}')" title="Edit Trade" class="p-1.5 rounded bg-[#1B2432] hover:bg-[#263346] text-slate-300 hover:text-white transition cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+          ${!compact ? `
+            <button type="button" onclick="deleteTrade('${t.id}')" title="Delete Trade" class="p-1.5 rounded bg-[#1B2432] hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          ` : ''}
+        </div>
+      `;
+
+      if (compact) {
+        return `
+          <tr class="hover:bg-[#17202D]/75 transition">
+            <td class="py-3.5 px-5 text-slate-200 whitespace-nowrap">${formatDisplayDate(t.trade_date)}</td>
+            <td class="py-3.5 px-4 font-semibold text-white whitespace-nowrap">
+              ${t.instrument}
+              <span class="ml-1.5 text-[10px] font-normal px-1.5 py-0.5 rounded bg-[#1C2533] text-[#8B98A9]">${t.category === 'Volatility' ? 'VOL' : 'FX'}</span>
+            </td>
+            <td class="py-3.5 px-4 font-medium ${sideColor} whitespace-nowrap">${t.side}</td>
+            <td class="py-3.5 px-4 text-slate-200 whitespace-nowrap">${entryDisplay}</td>
+            <td class="py-3.5 px-4 text-slate-200 whitespace-nowrap">${exitDisplay}</td>
+            <td class="py-3.5 px-4 whitespace-nowrap">${statusPill}</td>
+            <td class="py-3.5 px-4 whitespace-nowrap">${pnlText}</td>
+            <td class="py-3.5 px-5 text-right whitespace-nowrap">${confirmControls}</td>
+          </tr>
+        `;
+      }
+
+      return `
+        <tr class="hover:bg-[#17202D]/75 transition">
+          <td class="py-3.5 px-5 text-slate-200 whitespace-nowrap">${formatDisplayDate(t.trade_date)}</td>
+          <td class="py-3.5 px-4 font-semibold text-white whitespace-nowrap">${t.instrument}</td>
+          <td class="py-3.5 px-4 text-xs text-[#8B98A9] whitespace-nowrap">${t.category}</td>
+          <td class="py-3.5 px-4 font-medium ${sideColor} whitespace-nowrap">${t.side}</td>
+          <td class="py-3.5 px-4 text-slate-300 whitespace-nowrap">${entryDisplay} → ${exitDisplay}</td>
+          <td class="py-3.5 px-4 text-xs whitespace-nowrap">
+            <span class="text-red-400">-$${t.amount_risked}</span> / <span class="text-[#22C55E]">+$${t.profit_target}</span>
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap">${statusPill}</td>
+          <td class="py-3.5 px-4 whitespace-nowrap">${pnlText}</td>
+          <td class="py-3.5 px-5 text-right whitespace-nowrap">${confirmControls}</td>
+        </tr>
+      `;
+    }
+
+    function renderDashboardTradesTable() {
+      const tbody = document.getElementById('dashboardTradesTbody');
+      const recent = appState.trades.slice(0, 6);
+      if (recent.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-8 text-center text-sm text-[#8B98A9]">
+              No trades logged yet. Click <strong class="text-[#22C55E]">+ Place Trade</strong> to record your first Volatility or Currency trade.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      tbody.innerHTML = recent.map(t => buildTradeRowHtml(t, true)).join('');
+    }
+
+    function renderFullTradeLogTable() {
+      const tbody = document.getElementById('fullTradeLogTbody');
+      const query = (document.getElementById('searchTradeInput')?.value || '').toLowerCase();
+      const catFilter = document.getElementById('filterCategorySelect')?.value || 'ALL';
+      const statusFilter = document.getElementById('filterStatusSelect')?.value || 'ALL';
+
+      const filtered = appState.trades.filter(t => {
+        const matchesQuery = t.instrument.toLowerCase().includes(query) || (t.notes || '').toLowerCase().includes(query);
+        const matchesCat = catFilter === 'ALL' || t.category === catFilter;
+        const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
+        return matchesQuery && matchesCat && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="py-8 text-center text-sm text-[#8B98A9]">
+              No trades match your current filter criteria.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(t => buildTradeRowHtml(t, false)).join('');
+    }
+
+    // -----------------------------------------------------------------------
+    // 15. ANALYTICS VIEW RENDERING
+    // -----------------------------------------------------------------------
+    function renderAnalyticsView(m) {
+      document.getElementById('anaGainPct').textContent = `+${m.gainPct.toFixed(2)}%`;
+      document.getElementById('anaGainDollars').textContent = `+$${m.grossWon.toLocaleString()} gross profit`;
+
+      document.getElementById('anaLostPct').textContent = `-${m.lostPct.toFixed(2)}%`;
+      document.getElementById('anaLostDollars').textContent = `-$${m.grossLost.toLocaleString()} gross loss`;
+
+      document.getElementById('anaProfitFactor').textContent = m.profitFactor.toFixed(2);
+      const netEl = document.getElementById('anaNetGrowth');
+      netEl.textContent = `${m.netReturnPct >= 0 ? '+' : ''}${m.netReturnPct.toFixed(2)}%`;
+      netEl.className = `text-2xl font-bold ${m.netReturnPct >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`;
+      document.getElementById('anaEquitySummary').textContent = `${formatPlainMoney(m.startCap)} → ${formatPlainMoney(m.currentEquity)}`;
+
+      // Market Breakdown (Synthetic Volatilities vs Currencies)
+      const marketBox = document.getElementById('marketBreakdownContainer');
+      const categories = ['Volatility', 'Currency'];
+      marketBox.innerHTML = categories.map(cat => {
+        const catClosed = m.closedTrades.filter(t => t.category === cat);
+        const catWins = catClosed.filter(t => t.status === 'Win').length;
+        const catWinRate = catClosed.length > 0 ? ((catWins / catClosed.length) * 100).toFixed(1) : '0.0';
+        const catPnl = catClosed.reduce((s, t) => s + (Number(t.pnl) || 0), 0);
+        const label = cat === 'Volatility' ? 'Synthetic Volatilities' : 'Currencies (Forex)';
+        return `
+          <div class="p-4 rounded-xl bg-[#0D131C] border border-[#1E2836]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-white">${label}</span>
+              <span class="text-sm font-bold ${catPnl >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}">${formatCurrency(catPnl)}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-[#8B98A9] mb-2">
+              <span>${catClosed.length} closed trades</span>
+              <span>Win Rate: <strong class="text-white">${catWinRate}%</strong></span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-[#1A2332] overflow-hidden">
+              <div class="h-full bg-[#22C55E] rounded-full" style="width: ${catWinRate}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Top Instruments Breakdown
+      const instBox = document.getElementById('instrumentBreakdownContainer');
+      const map = {};
+      m.closedTrades.forEach(t => {
+        if (!map[t.instrument]) map[t.instrument] = { count: 0, wins: 0, pnl: 0 };
+        map[t.instrument].count++;
+        if (t.status === 'Win') map[t.instrument].wins++;
+        map[t.instrument].pnl += Number(t.pnl) || 0;
+      });
+
+      const entries = Object.entries(map).sort((a, b) => b[1].pnl - a[1].pnl);
+      if (entries.length === 0) {
+        instBox.innerHTML = `<p class="text-xs text-[#8B98A9]">Confirm trades as Win or Loss to see per-instrument analytics.</p>`;
+      } else {
+        instBox.innerHTML = entries.map(([name, stat]) => {
+          const wr = Math.round((stat.wins / stat.count) * 100);
+          return `
+            <div class="flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-[#0D131C] border border-[#1E2836] text-xs">
+              <div>
+                <span class="font-semibold text-white">${name}</span>
+                <span class="text-[#8B98A9] ml-2">${stat.count} trades (${wr}% WR)</span>
+              </div>
+              <span class="font-bold ${stat.pnl >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}">${formatCurrency(stat.pnl)}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 16. INITIALIZE SESSION ON PAGE LOAD
+    // -----------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', async () => {
+      populateInstrumentDropdown();
+
+      if (supabaseClient) {
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session && session.user) {
+            appState.user = session.user;
+            appState.isDemoSandbox = false;
+            await loadUserWorkspace();
+            return;
+          }
+        } catch (_) {}
+      }
+    });
+  </script>
+</body>
+</html>

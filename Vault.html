@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Digital Vault — Store • Organize • Access</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.3); border-radius: 9999px; }
+    .fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-[#F3F4F8] text-slate-900 antialiased selection:bg-orange-500 selection:text-white">
+
+  <!-- =======================================================================
+       GLOBAL TOAST NOTIFICATION BANNER
+       ======================================================================= -->
+  <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- =======================================================================
+       SECTION 1: AUTHENTICATION & SECURITY SCREENS
+       ======================================================================= -->
+  <div id="auth-wrapper" class="min-h-screen bg-[#F4F5F9] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-purple-300/30 blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-orange-300/30 blur-3xl pointer-events-none"></div>
+
+    <!-- Top Brand Header -->
+    <div class="mb-6 text-center flex flex-col items-center relative z-10">
+      <div class="flex items-center gap-2.5">
+        <svg class="w-9 h-9 drop-shadow-md" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="url(#brandShield1)" stroke="#FF8A00" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+          <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+          <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+          <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="brandShield1" x1="10" y1="4" x2="54" y2="62" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#FF9800"/><stop offset="1" stop-color="#F56A00"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="text-xl font-extrabold tracking-tight text-[#1E1042]">
+          My Digital <span class="text-[#FF7A00]">Vault</span>
+        </span>
+      </div>
+      <p class="text-xs font-medium text-slate-500 tracking-wide mt-1">Store • Organize • Access</p>
+    </div>
+
+    <!-- 1A. LOGIN CHOICE SCREEN -->
+    <div id="auth-screen-choice" class="w-full max-w-[470px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(30,16,66,0.08)] border border-slate-100 p-7 sm:p-9 relative z-10 fade-in">
+      <div class="flex flex-col items-center text-center mb-7">
+        <div class="w-12 h-12 mb-3">
+          <svg class="w-full h-full drop-shadow" viewBox="0 0 64 64" fill="none">
+            <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="#FF7A00"/>
+            <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+            <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+            <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+            <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Login to Your Vault</h1>
+        <p class="text-sm text-slate-500 mt-1">Choose how you want to access your account</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-2xl border border-slate-200/90 bg-slate-50/40 p-5 flex flex-col items-center text-center hover:border-purple-300 hover:bg-purple-50/20 transition">
+          <div class="w-11 h-11 rounded-xl bg-purple-100 text-[#6B21A8] flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+          </div>
+          <h2 class="font-bold text-slate-900 text-base">Login with Email</h2>
+          <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">Use your email and password</p>
+          <button type="button" onclick="switchAuthScreen('email')" class="mt-auto w-full py-2.5 px-4 rounded-xl bg-[#6B21A8] hover:bg-[#581C87] text-white font-semibold text-sm shadow-md shadow-purple-700/20 transition cursor-pointer">Continue</button>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200/90 bg-slate-50/40 p-5 flex flex-col items-center text-center hover:border-orange-300 hover:bg-orange-50/20 transition">
+          <div class="w-11 h-11 rounded-xl bg-purple-100 text-[#6B21A8] flex items-center justify-center mb-3">
+            <div class="grid grid-cols-3 gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span><span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span><span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span><span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span><span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span><span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span><span class="w-1.5 h-1.5 rounded-full bg-[#6B21A8]"></span>
+            </div>
+          </div>
+          <h2 class="font-bold text-slate-900 text-base">Login with PIN</h2>
+          <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">Use your 8-digit PIN</p>
+          <button type="button" onclick="switchAuthScreen('pin')" class="mt-auto w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#FF8A00] to-[#F56A00] hover:from-[#FF7A00] hover:to-[#E05E00] text-white font-semibold text-sm shadow-md shadow-orange-500/20 transition cursor-pointer">Continue</button>
+        </div>
+      </div>
+
+      <div class="relative my-6 flex items-center justify-center">
+        <div class="border-t border-slate-200 w-full"></div>
+        <span class="bg-white px-3 text-xs text-slate-400 font-medium">or</span>
+        <div class="border-t border-slate-200 w-full"></div>
+      </div>
+
+      <div class="flex flex-col items-center gap-2.5 text-sm">
+        <button type="button" onclick="switchAuthScreen('forgot')" class="text-[#6B21A8] hover:text-[#581C87] font-semibold underline underline-offset-2 cursor-pointer">Forgot your password?</button>
+        <p class="text-slate-600 text-xs">
+          Don't have a vault yet?
+          <button type="button" onclick="switchAuthScreen('signup')" class="text-[#FF7A00] hover:underline font-bold cursor-pointer">Create Account</button>
+        </p>
+      </div>
+    </div>
+
+    <!-- 1B. CREATE ACCOUNT SCREEN -->
+    <div id="auth-screen-signup" class="hidden w-full max-w-[430px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(30,16,66,0.08)] border border-slate-100 p-7 sm:p-9 relative z-10 fade-in">
+      <div class="flex flex-col items-center text-center mb-6">
+        <div class="w-12 h-12 mb-3">
+          <svg class="w-full h-full drop-shadow" viewBox="0 0 64 64" fill="none">
+            <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="#FF7A00"/>
+            <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+            <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+            <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+            <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Create Account</h1>
+        <p class="text-sm text-slate-500 mt-1">Start your personal vault today</p>
+      </div>
+
+      <form onsubmit="handleCreateAccount(event)" class="space-y-4">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input id="signup-name" type="text" required placeholder="Full Name" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-[#FF7A00] transition" />
+        </div>
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <input id="signup-email" type="email" required placeholder="Email Address" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-[#FF7A00] transition" />
+        </div>
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input id="signup-password" type="password" required minlength="6" placeholder="Create Password" class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-[#FF7A00] transition" />
+          <button type="button" onclick="togglePasswordField('signup-password')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer" aria-label="Toggle password">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF8A00] to-[#F56A00] hover:from-[#FF7A00] hover:to-[#E05E00] text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition cursor-pointer">Create Account</button>
+      </form>
+
+      <div class="relative my-6 flex items-center justify-center">
+        <div class="border-t border-slate-200 w-full"></div>
+        <span class="bg-white px-3 text-xs text-slate-400 font-medium">or</span>
+        <div class="border-t border-slate-200 w-full"></div>
+      </div>
+
+      <p class="text-center text-sm text-slate-700 font-medium">
+        Already have an account?
+        <button type="button" onclick="switchAuthScreen('choice')" class="text-[#6B21A8] hover:text-[#581C87] font-bold underline underline-offset-2 cursor-pointer">Login</button>
+      </p>
+    </div>
+
+    <!-- 1C. LOGIN WITH EMAIL & PASSWORD SCREEN -->
+    <div id="auth-screen-email" class="hidden w-full max-w-[430px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(30,16,66,0.08)] border border-slate-100 p-7 sm:p-9 relative z-10 fade-in">
+      <button type="button" onclick="switchAuthScreen('choice')" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-4 cursor-pointer">← Back to login options</button>
+      <div class="flex flex-col items-center text-center mb-6">
+        <div class="w-12 h-12 mb-3">
+          <svg class="w-full h-full drop-shadow" viewBox="0 0 64 64" fill="none">
+            <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="#FF7A00"/>
+            <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+            <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+            <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+            <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Sign In with Email</h1>
+        <p class="text-sm text-slate-500 mt-1">Enter your registered vault email & password</p>
+      </div>
+
+      <form onsubmit="handleEmailLogin(event)" class="space-y-4">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <input id="login-email" type="email" required placeholder="Email Address" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-[#6B21A8] transition" />
+        </div>
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input id="login-password" type="password" required placeholder="Password" class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-[#6B21A8] transition" />
+          <button type="button" onclick="togglePasswordField('login-password')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-[#6B21A8] hover:bg-[#581C87] text-white font-bold text-sm shadow-lg shadow-purple-700/25 transition cursor-pointer">Unlock Vault</button>
+      </form>
+      <div class="mt-5 text-center">
+        <button type="button" onclick="switchAuthScreen('pin')" class="text-xs font-bold text-[#FF7A00] hover:underline cursor-pointer">Use 8-Digit PIN Instead</button>
+      </div>
+    </div>
+
+    <!-- 1D. ENTER YOUR PIN SCREEN -->
+    <div id="auth-screen-pin" class="hidden w-full max-w-[440px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(30,16,66,0.08)] border border-slate-100 p-7 sm:p-9 relative z-10 fade-in">
+      <div class="flex flex-col items-center text-center mb-5">
+        <div class="w-12 h-12 mb-3">
+          <svg class="w-full h-full drop-shadow" viewBox="0 0 64 64" fill="none">
+            <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="#FF7A00"/>
+            <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+            <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+            <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+            <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 id="pin-screen-title" class="text-2xl font-extrabold text-slate-900">Enter Your PIN</h1>
+        <p id="pin-screen-subtitle" class="text-sm text-slate-500 mt-1">Enter the 8-digit PIN you set</p>
+      </div>
+
+      <form onsubmit="handlePinSubmit(event)">
+        <div id="pin-boxes-container" class="grid grid-cols-8 gap-1.5 sm:gap-2 my-6">
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+          <input type="password" inputmode="numeric" maxlength="1" class="pin-digit w-full aspect-square text-center text-lg sm:text-xl font-bold rounded-xl border-2 border-slate-200 bg-slate-50/70 focus:bg-white focus:border-[#6B21A8] focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition" />
+        </div>
+        <button id="pin-submit-btn" type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF8A00] to-[#F56A00] hover:from-[#FF7A00] hover:to-[#E05E00] text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition cursor-pointer">Unlock Vault</button>
+      </form>
+
+      <div id="pin-footer-links" class="mt-5 flex flex-col items-center gap-2">
+        <button type="button" onclick="switchAuthScreen('email')" class="text-sm font-bold text-[#6B21A8] hover:text-[#581C87] underline underline-offset-2 cursor-pointer">Use Password Instead</button>
+      </div>
+    </div>
+
+    <!-- 1E. FORGOT PASSWORD SCREEN -->
+    <div id="auth-screen-forgot" class="hidden w-full max-w-[430px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(30,16,66,0.08)] border border-slate-100 p-7 sm:p-9 relative z-10 fade-in">
+      <div class="flex flex-col items-center text-center mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Recover Vault Access</h1>
+        <p class="text-sm text-slate-500 mt-1">Enter your email to receive a password reset link</p>
+      </div>
+      <form onsubmit="handleForgotPassword(event)" class="space-y-4">
+        <input id="forgot-email" type="email" required placeholder="Email Address" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:border-[#6B21A8]" />
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-[#6B21A8] hover:bg-[#581C87] text-white font-bold text-sm cursor-pointer">Send Reset Link</button>
+      </form>
+      <div class="mt-4 text-center">
+        <button type="button" onclick="switchAuthScreen('choice')" class="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">← Back to Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       SECTION 2: MAIN AUTHENTICATED DASHBOARD
+       ======================================================================= -->
+  <div id="dashboard-wrapper" class="hidden min-h-screen flex bg-[#F3F4F8]">
+    <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="hidden fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs lg:hidden"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside id="left-sidebar" class="fixed lg:sticky top-0 left-0 z-50 w-[250px] h-screen bg-[#1b103f] text-white flex flex-col shrink-0 shadow-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-200 select-none">
+      <div class="px-5 pt-6 pb-5 flex flex-col items-center text-center border-b border-white/10">
+        <svg class="w-12 h-12 drop-shadow-md" viewBox="0 0 64 64" fill="none">
+          <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="url(#sideShieldGrad)" stroke="#FF8A00" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+          <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+          <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+          <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+          <defs><linearGradient id="sideShieldGrad" x1="10" y1="4" x2="54" y2="62" gradientUnits="userSpaceOnUse"><stop stop-color="#FF9800"/><stop offset="1" stop-color="#F56A00"/></linearGradient></defs>
+        </svg>
+        <div class="mt-2.5 text-xl font-extrabold tracking-tight"><span class="text-white">My Digital </span><span class="text-[#ff7a00]">Vault</span></div>
+        <p class="text-[11px] text-purple-200/80 tracking-wider mt-0.5 font-medium">Store • Organize • Access</p>
+      </div>
+
+      <nav class="flex-1 px-3.5 py-4 space-y-1.5 overflow-y-auto">
+        <button type="button" data-nav="dashboard" onclick="navigateTo('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#FF8A00] to-[#ff7a00] text-white shadow-lg shadow-orange-600/30 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span>
+        </button>
+        <button type="button" data-nav="files" onclick="navigateTo('files')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span>My Files</span>
+        </button>
+        <button type="button" data-nav="notes" onclick="navigateTo('notes')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>My Notes</span>
+        </button>
+        <button type="button" data-nav="passwords" onclick="navigateTo('passwords')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg><span>My Passwords</span>
+        </button>
+        <button type="button" data-nav="accounts" onclick="navigateTo('accounts')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>My Accounts</span>
+        </button>
+        <button type="button" data-nav="stories" onclick="navigateTo('stories')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>My Life Stories</span>
+        </button>
+        <a href="https://deriv.com" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/95 hover:bg-white/10 hover:text-white transition group">
+          <span class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-[#ff7a00] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span>Trading Journal</span>
+          </span>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-400/30">Deriv ↗</span>
+        </a>
+        <button type="button" data-nav="settings" onclick="navigateTo('settings')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span>
+        </button>
+        <button type="button" onclick="handleLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-rose-500/20 hover:text-rose-200 transition cursor-pointer">
+          <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span>
+        </button>
+      </nav>
+
+      <div class="p-4 mt-auto">
+        <div class="rounded-2xl bg-[#291b57] border border-white/10 p-3.5 flex items-center gap-3 shadow-inner">
+          <div class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/30">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="min-w-0"><p class="text-xs font-bold text-white leading-tight">Vault Secure</p><p class="text-[11px] text-purple-200/75 truncate mt-0.5">Your data is protected</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT WORKSPACE -->
+    <main class="flex-1 min-w-0 relative">
+      <div class="absolute inset-x-0 top-0 h-[365px] sm:h-[390px] overflow-hidden pointer-events-none select-none">
+        <svg viewBox="0 0 1440 420" preserveAspectRatio="xMidYMid slice" class="w-full h-full">
+          <defs>
+            <linearGradient id="skyTwilight" x1="0%" y1="0%" x2="100%" y2="85%"><stop offset="0%" stop-color="#69489C"/><stop offset="36%" stop-color="#9A64B8"/><stop offset="68%" stop-color="#E88B8C"/><stop offset="100%" stop-color="#FFB168"/></linearGradient>
+            <linearGradient id="farRidge" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#5B4B8A"/><stop offset="100%" stop-color="#392C66"/></linearGradient>
+            <linearGradient id="snowCapGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFF7F9"/><stop offset="55%" stop-color="#E3D5F2"/><stop offset="100%" stop-color="#7B68A6"/></linearGradient>
+            <linearGradient id="forestValley" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#251C4B"/><stop offset="100%" stop-color="#151031"/></linearGradient>
+          </defs>
+          <rect width="1440" height="420" fill="url(#skyTwilight)"/>
+          <ellipse cx="320" cy="95" rx="220" ry="28" fill="#FF9E80" fill-opacity="0.22"/>
+          <ellipse cx="1080" cy="115" rx="260" ry="34" fill="#FFD180" fill-opacity="0.28"/>
+          <path d="M0 245 L180 185 L390 230 L610 165 L860 88 L1140 205 L1320 175 L1440 215 L1440 420 L0 420 Z" fill="url(#farRidge)"/>
+          <path d="M520 265 L860 88 L1210 270 L1020 285 L710 285 Z" fill="#352B63"/>
+          <path d="M860 88 L775 148 L805 156 L825 142 L845 164 L872 145 L898 168 L925 148 L952 155 Z" fill="url(#snowCapGrad)"/>
+          <path d="M0 265 Q340 215 720 275 T1440 255 L1440 420 L0 420 Z" fill="#2D2359" fill-opacity="0.85"/>
+          <path d="M0 305 Q420 270 860 320 T1440 295 L1440 420 L0 420 Z" fill="url(#forestValley)"/>
+          <path d="M40 360 L55 290 L70 360 Z M75 365 L92 280 L109 365 Z M1120 355 L1142 255 L1164 355 Z M1158 365 L1182 240 L1206 365 Z M1200 365 L1220 275 L1240 365 Z" fill="#140E2E"/>
+        </svg>
+        <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#F3F4F8] to-transparent"></div>
+      </div>
+
+      <div class="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-7 pt-5 pb-10">
+        <header class="flex items-center justify-between gap-4 mb-6">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="toggleMobileSidebar(true)" class="lg:hidden p-2.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white transition cursor-pointer" aria-label="Open menu">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <button id="back-to-dash-btn" type="button" onclick="navigateTo('dashboard')" class="hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-semibold transition cursor-pointer">← Back to Dashboard</button>
+          </div>
+
+          <div class="relative ml-auto">
+            <button type="button" onclick="toggleProfileDropdown()" class="flex items-center gap-2.5 pl-2 pr-4 py-1.5 rounded-full bg-white/90 hover:bg-white backdrop-blur-md shadow-md border border-white/60 transition cursor-pointer">
+              <div id="topbar-avatar" class="w-8 h-8 rounded-full bg-gradient-to-br from-[#1b103f] to-[#5B21B6] text-white font-bold text-xs flex items-center justify-center ring-2 ring-orange-400/80">--</div>
+              <span id="topbar-welcome" class="text-xs sm:text-sm font-bold text-slate-800">Welcome</span>
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-60 rounded-2xl bg-white shadow-xl border border-slate-100 py-2 z-40">
+              <div class="px-4 py-2.5 border-b border-slate-100">
+                <p id="dropdown-name" class="text-xs font-bold text-slate-900 truncate">—</p>
+                <p id="dropdown-email" class="text-[11px] text-slate-500 truncate">—</p>
+              </div>
+              <button type="button" onclick="navigateTo('settings'); toggleProfileDropdown(false)" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"><span>⚙️</span> Account & PIN Settings</button>
+              <a href="https://deriv.com" target="_blank" rel="noopener noreferrer" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-teal-700 hover:bg-teal-50 flex items-center justify-between"><span>📈 Trading Journal (Deriv.com)</span><span>↗</span></a>
+              <button type="button" onclick="handleLogout()" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"><span>🔒</span> Lock & Logout</button>
+            </div>
+          </div>
+        </header>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start fade-in">
+          <div class="xl:col-span-8 flex flex-col gap-6">
+            <div class="pt-2 pb-1 text-white">
+              <h1 id="hero-welcome-heading" class="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight drop-shadow-sm leading-tight">Welcome</h1>
+              <p class="text-lg sm:text-xl font-bold text-white/95 mt-1.5 drop-shadow-xs">Your personal vault is ready.</p>
+              <p class="text-xs sm:text-sm text-white/90 mt-1 max-w-xl drop-shadow-xs">Keep your files, ideas and important details all in one secure place.</p>
+              <div class="flex flex-wrap items-center gap-3.5 mt-6">
+                <button type="button" onclick="openQuickModal('upload')" class="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-[#FF8A00] to-[#ff7a00] hover:from-[#FF7A00] hover:to-[#E05E00] text-white font-bold text-sm shadow-lg shadow-orange-600/30 transition transform hover:-translate-y-0.5 cursor-pointer">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Upload Files</span>
+                </button>
+                <button type="button" onclick="openQuickModal('note')" class="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl bg-[#1b103f]/80 hover:bg-[#1b103f]/95 backdrop-blur-md border border-white/25 text-white font-bold text-sm shadow-lg transition transform hover:-translate-y-0.5 cursor-pointer">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Write a Note</span>
+                </button>
+                <a href="https://deriv.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white font-bold text-sm shadow-lg transition transform hover:-translate-y-0.5">
+                  <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg><span>Trading Journal</span><span class="text-xs opacity-80">↗</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-[0_12px_35px_rgba(30,16,66,0.06)] border border-slate-100 p-5 sm:p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-[#ff7a00] fill-[#ff7a00]" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Quick Access</h2>
+                </div>
+                <span class="text-xs font-medium text-slate-400">Encrypted modules</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <button type="button" onclick="navigateTo('files')" class="group rounded-2xl border border-blue-100 bg-[#EEF5FF] hover:bg-[#E1EEFF] p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                  <div class="w-12 h-12 rounded-2xl bg-[#1D74F5] text-white flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></div>
+                  <h3 class="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">My Files</h3><p class="text-[11px] text-slate-500 mt-1 line-clamp-1">Documents, images...</p>
+                </button>
+                <button type="button" onclick="navigateTo('notes')" class="group rounded-2xl border border-purple-100 bg-[#F3EEFF] hover:bg-[#EAE0FF] p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                  <div class="w-12 h-12 rounded-2xl bg-[#6D28D9] text-white flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+                  <h3 class="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">My Notes</h3><p class="text-[11px] text-slate-500 mt-1 line-clamp-1">Ideas & thoughts...</p>
+                </button>
+                <button type="button" onclick="navigateTo('passwords')" class="group rounded-2xl border border-emerald-100 bg-[#ECFDF5] hover:bg-[#DDFBE9] p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                  <div class="w-12 h-12 rounded-2xl bg-[#059669] text-white flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+                  <h3 class="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">My Passwords</h3><p class="text-[11px] text-slate-500 mt-1 line-clamp-1">Emails, accounts...</p>
+                </button>
+                <button type="button" onclick="navigateTo('accounts')" class="group rounded-2xl border border-orange-100 bg-[#FFF5EC] hover:bg-[#FFECD9] p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                  <div class="w-12 h-12 rounded-2xl bg-[#F97316] text-white flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+                  <h3 class="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">My Accounts</h3><p class="text-[11px] text-slate-500 mt-1 line-clamp-1">Bank, services...</p>
+                </button>
+                <button type="button" onclick="navigateTo('stories')" class="group rounded-2xl border border-rose-100 bg-[#FFF0F3] hover:bg-[#FFE3E9] p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                  <div class="w-12 h-12 rounded-2xl bg-[#E11D48] text-white flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1z"/></svg></div>
+                  <h3 class="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">Life Stories</h3><p class="text-[11px] text-slate-500 mt-1 line-clamp-1">My journey...</p>
+                </button>
+                <a href="https://deriv.com" target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-teal-100 bg-[#F0FDFA] hover:bg-[#CCFBF1] p-4 flex flex-col items-center text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+                  <div class="w-12 h-12 rounded-2xl bg-[#0D9488] text-white flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform relative">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                    <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white text-teal-700 text-[10px] font-extrabold shadow flex items-center justify-center">↗</span>
+                  </div>
+                  <h3 class="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">Trading Journal</h3><p class="text-[11px] text-teal-700 font-semibold mt-1 line-clamp-1">Deriv trading log...</p>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="xl:col-span-4 flex flex-col gap-4">
+            <div class="rounded-3xl bg-[#271C47]/80 backdrop-blur-md border border-white/20 p-6 text-center text-white shadow-xl">
+              <div class="flex justify-center mb-3">
+                <div class="relative w-16 h-16">
+                  <svg class="w-full h-full drop-shadow-md" viewBox="0 0 64 64" fill="none">
+                    <path d="M32 4L10 13.5V30.5C10 45.2 19.4 58.6 32 62C44.6 58.6 54 45.2 54 30.5V13.5L32 4Z" fill="#FF8A00"/>
+                    <path d="M26 28V23C26 19.6863 28.6863 17 32 17C35.3137 17 38 19.6863 38 23V28" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+                    <rect x="22" y="27" width="20" height="16" rx="4" fill="#FFFFFF"/>
+                    <circle cx="32" cy="33.5" r="2.2" fill="#FF7A00"/>
+                    <path d="M32 35V38.5" stroke="#FF7A00" stroke-width="2.2" stroke-linecap="round"/>
+                  </svg>
+                  <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-[#231942] flex items-center justify-center shadow-lg"><svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                </div>
+              </div>
+              <h2 class="text-lg font-extrabold tracking-tight">Your Vault is Secure</h2>
+              <p id="last-login-display" class="text-xs text-purple-200/85 mt-1">Last login: —</p>
+            </div>
+
+            <div class="rounded-3xl bg-white shadow-[0_12px_35px_rgba(30,16,66,0.06)] border border-slate-100 p-5">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="flex items-end gap-0.5 h-4"><span class="w-1 h-2.5 bg-[#1b103f] rounded-xs"></span><span class="w-1 h-4 bg-[#1b103f] rounded-xs"></span><span class="w-1 h-3 bg-[#1b103f] rounded-xs"></span></div>
+                <h3 class="text-base font-extrabold text-slate-900">Vault Overview</h3>
+              </div>
+              <div class="space-y-3">
+                <button type="button" onclick="navigateTo('files')" class="w-full flex items-center justify-between text-sm hover:bg-slate-50 p-1.5 rounded-xl transition cursor-pointer">
+                  <span class="flex items-center gap-3 font-medium text-slate-700"><span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>Total Files</span>
+                  <span id="stat-total-files" class="font-extrabold text-slate-900 text-base">0</span>
+                </button>
+                <button type="button" onclick="navigateTo('notes')" class="w-full flex items-center justify-between text-sm hover:bg-slate-50 p-1.5 rounded-xl transition cursor-pointer">
+                  <span class="flex items-center gap-3 font-medium text-slate-700"><span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"/></svg></span>Total Notes</span>
+                  <span id="stat-total-notes" class="font-extrabold text-slate-900 text-base">0</span>
+                </button>
+                <button type="button" onclick="navigateTo('passwords')" class="w-full flex items-center justify-between text-sm hover:bg-slate-50 p-1.5 rounded-xl transition cursor-pointer">
+                  <span class="flex items-center gap-3 font-medium text-slate-700"><span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/></svg></span>Passwords Saved</span>
+                  <span id="stat-total-passwords" class="font-extrabold text-slate-900 text-base">0</span>
+                </button>
+                <button type="button" onclick="navigateTo('accounts')" class="w-full flex items-center justify-between text-sm hover:bg-slate-50 p-1.5 rounded-xl transition cursor-pointer">
+                  <span class="flex items-center gap-3 font-medium text-slate-700"><span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>Accounts Stored</span>
+                  <span id="stat-total-accounts" class="font-extrabold text-slate-900 text-base">0</span>
+                </button>
+              </div>
+              <div class="mt-5 rounded-2xl bg-gradient-to-r from-[#5B21B6] to-[#6D28D9] p-4 text-center text-white shadow-md shadow-purple-700/20">
+                <p class="text-xs sm:text-[13px] font-semibold italic leading-relaxed">“A secure place for everything that matters.”</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-subpage" class="hidden bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8 mt-4 fade-in"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modal-backdrop" onclick="closeQuickModal()" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div id="modal-upload" onclick="event.stopPropagation()" class="hidden w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-7 fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900">Upload File to Vault</h3>
+        <button type="button" onclick="closeQuickModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">✕</button>
+      </div>
+      <form onsubmit="handleAddFile(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select File</label>
+          <input id="input-file-picker" type="file" onchange="syncPickedFileName(this)" class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-[#ff7a00] hover:file:bg-orange-100 mb-2" />
+          <input id="input-file-name" type="text" required placeholder="e.g. Passport_Scan.pdf" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#ff7a00]" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Folder Category</label>
+          <select id="input-file-category" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white">
+            <option value="Documents">Documents</option>
+            <option value="Identity & Legal">Identity & Legal</option>
+            <option value="Photos & Media">Photos & Media</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF8A00] to-[#ff7a00] text-white font-bold text-sm shadow-lg cursor-pointer">Encrypt & Store File</button>
+      </form>
+    </div>
+
+    <div id="modal-note" onclick="event.stopPropagation()" class="hidden w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-7 fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900">Write a Secure Note</h3>
+        <button type="button" onclick="closeQuickModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">✕</button>
+      </div>
+      <form onsubmit="handleAddNote(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Note Title</label>
+          <input id="input-note-title" type="text" required placeholder="e.g. Weekly Checklist" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B21A8]" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tag</label>
+          <select id="input-note-tag" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
+            <option value="Personal">Personal</option>
+            <option value="Ideas & Goals">Ideas & Goals</option>
+            <option value="Important">Important</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Note Content</label>
+          <textarea id="input-note-content" rows="4" required placeholder="Write your private note here..." class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B21A8]"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-[#6B21A8] hover:bg-[#581C87] text-white font-bold text-sm shadow-lg cursor-pointer">Save Note to Vault</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // SUPABASE CONFIG — REPLACE WITH YOUR PROJECT URL & ANON KEY
+    // =========================================================================
+    const SUPABASE_URL = 'https://qdwstzbnlqbwqdivhlyn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_CiSymPEmW7MCimvbK4oFkw_qalb9QzN';
+    const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // =========================================================================
+    // STATE
+    // =========================================================================
+    let currentSession = null;
+    let currentProfile = null;
+    let pinMode = 'login'; // 'login' | 'setup'
+    let currentTab = 'dashboard';
+    let revealedPasswords = {};
+    let cachedData = { files: [], notes: [], passwords: [], accounts: [], stories: [] };
+
+    // =========================================================================
+    // TOASTS
+    // =========================================================================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      const bgClass = type === 'error' ? 'bg-rose-600 text-white' : 'bg-[#1b103f] text-white border border-purple-400/30';
+      el.className = `${bgClass} px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 fade-in pointer-events-auto`;
+      el.innerHTML = `<span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-white' : 'bg-emerald-400'}"></span><span>${escapeHtml(message)}</span>`;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.25s ease'; setTimeout(() => el.remove(), 260); }, 4000);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // =========================================================================
+    // AUTH SCREEN SWITCHING
+    // =========================================================================
+    function switchAuthScreen(screen) {
+      ['choice', 'signup', 'email', 'pin', 'forgot'].forEach(s => {
+        const el = document.getElementById(`auth-screen-${s}`);
+        if (el) el.classList.toggle('hidden', s !== screen);
+      });
+      if (screen === 'pin') {
+        pinMode = 'login';
+        document.getElementById('pin-screen-title').textContent = 'Enter Your PIN';
+        document.getElementById('pin-screen-subtitle').textContent = 'Enter the 8-digit PIN you set';
+        document.getElementById('pin-submit-btn').textContent = 'Unlock Vault';
+        document.getElementById('pin-footer-links').classList.remove('hidden');
+        clearPinInputs();
+      }
+    }
+
+    function togglePasswordField(id) {
+      const input = document.getElementById(id);
+      if (input) input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // =========================================================================
+    // PIN BOXES
+    // =========================================================================
+    const pinInputs = Array.from(document.querySelectorAll('.pin-digit'));
+    pinInputs.forEach((input, index) => {
+      input.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/\D/g, '').slice(-1);
+        e.target.value = val;
+        if (val && index < pinInputs.length - 1) pinInputs[index + 1].focus();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) pinInputs[index - 1].focus();
+      });
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 8);
+        pasted.split('').forEach((ch, idx) => { if (pinInputs[idx]) pinInputs[idx].value = ch; });
+        pinInputs[Math.min(pasted.length, 7)].focus();
+      });
+    });
+    function clearPinInputs() { pinInputs.forEach(inp => inp.value = ''); setTimeout(() => pinInputs[0]?.focus(), 50); }
+
+    // =========================================================================
+    // SIGNUP — REAL SUPABASE AUTH
+    // =========================================================================
+    async function handleCreateAccount(e) {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+
+      if (!name || !email || !password) { showToast('Please complete all fields.', 'error'); return; }
+      if (password.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.textContent = 'Creating account...';
+
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name: name } }
+      });
+
+      btn.disabled = false; btn.textContent = 'Create Account';
+
+      if (error) { showToast(error.message, 'error'); return; }
+
+      if (data.session) {
+        currentSession = data.session;
+        await ensureProfile();
+        switchAuthScreen('pin');
+        pinMode = 'setup';
+        document.getElementById('pin-screen-title').textContent = 'Set Your 8-Digit PIN';
+        document.getElementById('pin-screen-subtitle').textContent = 'Create an 8-digit PIN to unlock your vault';
+        document.getElementById('pin-submit-btn').textContent = 'Save PIN & Enter Dashboard';
+        document.getElementById('pin-footer-links').classList.add('hidden');
+        clearPinInputs();
+        showToast('Account created! Choose your 8-digit PIN.');
+      } else {
+        showToast('Account created. Check your email to confirm, then log in.');
+        switchAuthScreen('email');
+      }
+    }
+
+    // =========================================================================
+    // EMAIL LOGIN
+    // =========================================================================
+    async function handleEmailLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!email || !password) { showToast('Enter your email and password.', 'error'); return; }
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.textContent = 'Signing in...';
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      btn.disabled = false; btn.textContent = 'Unlock Vault';
+
+      if (error) { showToast(error.message, 'error'); return; }
+
+      currentSession = data.session;
+      await ensureProfile();
+
+      // If no PIN set → setup; else require PIN re-entry
+      if (!currentProfile?.pin_hash) {
+        switchAuthScreen('pin');
+        pinMode = 'setup';
+        document.getElementById('pin-screen-title').textContent = 'Set Your 8-Digit PIN';
+        document.getElementById('pin-screen-subtitle').textContent = 'Create an 8-digit PIN to unlock your vault';
+        document.getElementById('pin-submit-btn').textContent = 'Save PIN & Enter Dashboard';
+        document.getElementById('pin-footer-links').classList.add('hidden');
+        clearPinInputs();
+      } else {
+        switchAuthScreen('pin');
+        pinMode = 'login';
+        showToast('Enter your 8-digit PIN to unlock.');
+        clearPinInputs();
+      }
+    }
+
+    // =========================================================================
+    // PIN SUBMIT (setup or verify) — RPC based
+    // =========================================================================
+    async function handlePinSubmit(e) {
+      e.preventDefault();
+      const pin = pinInputs.map(i => i.value).join('');
+      if (pin.length !== 8) { showToast('Enter all 8 digits.', 'error'); return; }
+
+      const btn = document.getElementById('pin-submit-btn');
+      btn.disabled = true; btn.textContent = 'Verifying...';
+
+      if (pinMode === 'setup') {
+        const { error } = await supabase.rpc('set_vault_pin', { raw_pin: pin });
+        btn.disabled = false; btn.textContent = 'Save PIN & Enter Dashboard';
+        if (error) { showToast(error.message, 'error'); return; }
+        showToast('PIN saved.');
+        await unlockDashboard();
+      } else {
+        const { data, error } = await supabase.rpc('verify_vault_pin', { raw_pin: pin });
+        btn.disabled = false; btn.textContent = 'Unlock Vault';
+        if (error) { showToast(error.message, 'error'); clearPinInputs(); return; }
+        if (data === true) { await unlockDashboard(); }
+        else { showToast('Incorrect PIN.', 'error'); clearPinInputs(); }
+      }
+    }
+
+    // =========================================================================
+    // FORGOT PASSWORD — real reset email
+    // =========================================================================
+    async function handleForgotPassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('forgot-email').value.trim();
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Password reset link sent to your email.');
+      switchAuthScreen('choice');
+    }
+
+    // =========================================================================
+    // PROFILE LOADING
+    // =========================================================================
+    async function ensureProfile() {
+      if (!currentSession?.user) return null;
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', currentSession.user.id).maybeSingle();
+      if (error) { showToast(error.message, 'error'); return null; }
+      if (!data) {
+        // create fallback (trigger may be missing)
+        const fallbackName = currentSession.user.user_metadata?.full_name || currentSession.user.email.split('@')[0];
+        const { data: inserted } = await supabase.from('profiles').insert({
+          id: currentSession.user.id,
+          email: currentSession.user.email,
+          full_name: fallbackName
+        }).select().single();
+        currentProfile = inserted;
+      } else {
+        currentProfile = data;
+      }
+      return currentProfile;
+    }
+
+    // =========================================================================
+    // UNLOCK DASHBOARD
+    // =========================================================================
+    async function unlockDashboard() {
+      document.getElementById('auth-wrapper').classList.add('hidden');
+      document.getElementById('dashboard-wrapper').classList.remove('hidden');
+      await refreshDashboardUI();
+      await navigateTo('dashboard');
+      showToast(`Welcome back, ${currentProfile?.full_name || 'friend'}!`);
+    }
+
+    // =========================================================================
+    // LOGOUT
+    // =========================================================================
+    async function handleLogout() {
+      toggleMobileSidebar(false);
+      toggleProfileDropdown(false);
+      await supabase.auth.signOut();
+      currentSession = null; currentProfile = null; cachedData = { files: [], notes: [], passwords: [], accounts: [], stories: [] };
+      document.getElementById('dashboard-wrapper').classList.add('hidden');
+      document.getElementById('auth-wrapper').classList.remove('hidden');
+      switchAuthScreen('choice');
+      showToast('Vault locked.');
+    }
+
+    // =========================================================================
+    // REFRESH DASHBOARD COUNTS + PROFILE
+    // =========================================================================
+    async function refreshDashboardUI() {
+      if (!currentProfile) return;
+
+      const name = currentProfile.full_name || 'User';
+      const initials = name.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'U';
+      document.getElementById('topbar-avatar').textContent = initials;
+      document.getElementById('topbar-welcome').textContent = `Welcome, ${name}`;
+      document.getElementById('hero-welcome-heading').textContent = `Welcome, ${name}`;
+      document.getElementById('dropdown-name').textContent = name;
+      document.getElementById('dropdown-email').textContent = currentProfile.email || '';
+      document.getElementById('last-login-display').textContent = 'Last login: ' + (currentProfile.last_login_at ? new Date(currentProfile.last_login_at).toLocaleString() : '—');
+
+      const [files, notes, passwords, accounts] = await Promise.all([
+        supabase.from('vault_files').select('id', { count: 'exact', head: true }),
+        supabase.from('vault_notes').select('id', { count: 'exact', head: true }),
+        supabase.from('vault_passwords').select('id', { count: 'exact', head: true }),
+        supabase.from('vault_accounts').select('id', { count: 'exact', head: true })
+      ]);
+      document.getElementById('stat-total-files').textContent = files.count ?? 0;
+      document.getElementById('stat-total-notes').textContent = notes.count ?? 0;
+      document.getElementById('stat-total-passwords').textContent = passwords.count ?? 0;
+      document.getElementById('stat-total-accounts').textContent = accounts.count ?? 0;
+    }
+
+    function toggleMobileSidebar(open) {
+      const sidebar = document.getElementById('left-sidebar');
+      const backdrop = document.getElementById('mobile-sidebar-backdrop');
+      if (open) { sidebar.classList.remove('-translate-x-full'); backdrop.classList.remove('hidden'); }
+      else { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); }
+    }
+
+    function toggleProfileDropdown(force) {
+      const dd = document.getElementById('profile-dropdown');
+      if (typeof force === 'boolean') dd.classList.toggle('hidden', !force);
+      else dd.classList.toggle('hidden');
+    }
+
+    // =========================================================================
+    // NAVIGATION
+    // =========================================================================
+    async function navigateTo(tab) {
+      currentTab = tab;
+      toggleMobileSidebar(false);
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isTarget = btn.getAttribute('data-nav') === tab;
+        if (isTarget) btn.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#FF8A00] to-[#ff7a00] text-white shadow-lg shadow-orange-600/30 transition cursor-pointer';
+        else btn.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-purple-100/85 hover:bg-white/10 hover:text-white transition cursor-pointer';
+      });
+
+      const dashView = document.getElementById('view-dashboard');
+      const subView = document.getElementById('view-subpage');
+      const backBtn = document.getElementById('back-to-dash-btn');
+
+      if (tab === 'dashboard') {
+        dashView.classList.remove('hidden');
+        subView.classList.add('hidden');
+        backBtn.classList.add('hidden');
+        await refreshDashboardUI();
+      } else {
+        dashView.classList.add('hidden');
+        subView.classList.remove('hidden');
+        backBtn.classList.remove('hidden');
+        await renderSubpage(tab);
+      }
+    }
+
+    // =========================================================================
+    // MODALS
+    // =========================================================================
+    function openQuickModal(type) {
+      document.getElementById('modal-backdrop').classList.remove('hidden');
+      document.getElementById('modal-upload').classList.toggle('hidden', type !== 'upload');
+      document.getElementById('modal-note').classList.toggle('hidden', type !== 'note');
+    }
+    function closeQuickModal() {
+      document.getElementById('modal-backdrop').classList.add('hidden');
+      document.getElementById('modal-upload').classList.add('hidden');
+      document.getElementById('modal-note').classList.add('hidden');
+    }
+    function syncPickedFileName(fileInput) {
+      if (fileInput.files && fileInput.files[0]) document.getElementById('input-file-name').value = fileInput.files[0].name;
+    }
+
+    // =========================================================================
+    // UPLOAD FILE → Storage + DB
+    // =========================================================================
+    async function handleAddFile(e) {
+      e.preventDefault();
+      if (!currentSession?.user) return;
+      const fileInput = document.getElementById('input-file-picker');
+      const nameField = document.getElementById('input-file-name');
+      const category = document.getElementById('input-file-category').value;
+      const picked = fileInput.files && fileInput.files[0];
+
+      if (!picked) { showToast('Select a file to upload.', 'error'); return; }
+      if (picked.size > MAX_FILE_BYTES) { showToast('File exceeds 50 MB limit.', 'error'); return; }
+
+      const fileName = (nameField.value || picked.name).trim();
+      const path = `${currentSession.user.id}/${Date.now()}_${picked.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.textContent = 'Uploading...';
+
+      const { error: upErr } = await supabase.storage.from('vault-files').upload(path, picked, { upsert: false });
+      if (upErr) {
+        btn.disabled = false; btn.textContent = 'Encrypt & Store File';
+        showToast(upErr.message, 'error'); return;
+      }
+
+      const { error: dbErr } = await supabase.from('vault_files').insert({
+        user_id: currentSession.user.id,
+        file_name: fileName,
+        storage_path: path,
+        category,
+        file_size_bytes: picked.size,
+        mime_type: picked.type || null
+      });
+
+      btn.disabled = false; btn.textContent = 'Encrypt & Store File';
+
+      if (dbErr) {
+        await supabase.storage.from('vault-files').remove([path]);
+        showToast(dbErr.message, 'error'); return;
+      }
+
+      fileInput.value = ''; nameField.value = '';
+      closeQuickModal();
+      showToast(`"${fileName}" stored securely.`);
+      await refreshDashboardUI();
+      if (currentTab === 'files') await renderSubpage('files');
+    }
+
+    // =========================================================================
+    // ADD NOTE
+    // =========================================================================
+    async function handleAddNote(e) {
+      e.preventDefault();
+      if (!currentSession?.user) return;
+      const title = document.getElementById('input-note-title').value.trim();
+      const tag = document.getElementById('input-note-tag').value;
+      const content = document.getElementById('input-note-content').value.trim();
+      if (!title || !content) return;
+
+      const { error } = await supabase.from('vault_notes').insert({
+        user_id: currentSession.user.id,
+        title, tag, content
+      });
+      if (error) { showToast(error.message, 'error'); return; }
+
+      document.getElementById('input-note-title').value = '';
+      document.getElementById('input-note-content').value = '';
+      closeQuickModal();
+      showToast(`Note "${title}" saved.`);
+      await refreshDashboardUI();
+      if (currentTab === 'notes') await renderSubpage('notes');
+    }
+
+    function copyTextToClipboard(text, label = 'Copied') {
+      const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+      document.execCommand('copy'); t.remove(); showToast(label);
+    }
+
+    // =========================================================================
+    // SUBPAGE RENDERERS
+    // =========================================================================
+    function emptyState(message) {
+      return `<div class="py-12 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+          <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <p class="text-sm text-slate-500">${escapeHtml(message)}</p>
+      </div>`;
+    }
+
+    async function renderSubpage(tab) {
+      const container = document.getElementById('view-subpage');
+      container.innerHTML = '<p class="text-sm text-slate-500">Loading...</p>';
+
+      if (tab === 'files') {
+        const { data: files, error } = await supabase.from('vault_files').select('*').order('created_at', { ascending: false });
+        if (error) { container.innerHTML = `<p class="text-sm text-rose-600">${escapeHtml(error.message)}</p>`; return; }
+        cachedData.files = files || [];
+
+        container.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900">📁 My Files (${cachedData.files.length})</h2>
+              <p class="text-xs text-slate-500 mt-1">Encrypted personal documents, certificates, media</p>
+            </div>
+            <button type="button" onclick="openQuickModal('upload')" class="px-4 py-2.5 rounded-xl bg-[#ff7a00] hover:bg-[#e06900] text-white text-xs font-bold shadow cursor-pointer">+ Upload New File</button>
+          </div>
+          ${cachedData.files.length === 0 ? emptyState('No files yet. Upload your first file.') : `
+          <div class="divide-y divide-slate-100">
+            ${cachedData.files.map(f => `
+              <div class="py-3.5 px-3 flex items-center justify-between gap-4 hover:bg-slate-50 rounded-xl transition">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-slate-900 truncate">${escapeHtml(f.file_name)}</p>
+                  <p class="text-xs text-slate-500">${escapeHtml(f.category)} • ${formatBytes(f.file_size_bytes)} • ${new Date(f.created_at).toLocaleDateString()}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button type="button" onclick="downloadFile('${f.id}')" class="text-xs font-semibold text-[#6B21A8] hover:underline cursor-pointer">Download</button>
+                  <button type="button" onclick="deleteFile('${f.id}', '${escapeHtml(f.storage_path)}')" class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer">Remove</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>`}
+        `;
+      } else if (tab === 'notes') {
+        const { data: notes, error } = await supabase.from('vault_notes').select('*').order('created_at', { ascending: false });
+        if (error) { container.innerHTML = `<p class="text-sm text-rose-600">${escapeHtml(error.message)}</p>`; return; }
+        cachedData.notes = notes || [];
+
+        container.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900">📝 My Notes (${cachedData.notes.length})</h2>
+              <p class="text-xs text-slate-500 mt-1">Private ideas, checklists, and secure memos</p>
+            </div>
+            <button type="button" onclick="openQuickModal('note')" class="px-4 py-2.5 rounded-xl bg-[#6B21A8] hover:bg-[#581C87] text-white text-xs font-bold shadow cursor-pointer">+ Write a Note</button>
+          </div>
+          ${cachedData.notes.length === 0 ? emptyState('No notes yet. Write your first note.') : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${cachedData.notes.map(n => `
+              <div class="rounded-2xl border border-purple-100 bg-purple-50/30 p-5 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-bold">${escapeHtml(n.tag)}</span>
+                    <span class="text-[11px] text-slate-400">${new Date(n.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <h3 class="text-base font-extrabold text-slate-900">${escapeHtml(n.title)}</h3>
+                  <p class="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-wrap">${escapeHtml(n.content)}</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-purple-100 flex justify-end">
+                  <button type="button" onclick="deleteRow('vault_notes', '${n.id}', 'notes')" class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer">Delete</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>`}
+        `;
+      } else if (tab === 'passwords') {
+        const { data: pws, error } = await supabase.from('vault_passwords').select('*').order('created_at', { ascending: false });
+        if (error) { container.innerHTML = `<p class="text-sm text-rose-600">${escapeHtml(error.message)}</p>`; return; }
+        cachedData.passwords = pws || [];
+
+        container.innerHTML = `
+          <div class="mb-6">
+            <h2 class="text-2xl font-extrabold text-slate-900">🔑 My Passwords (${cachedData.passwords.length})</h2>
+            <p class="text-xs text-slate-500 mt-1">Encrypted logins for your services</p>
+          </div>
+          <form onsubmit="addPasswordEntry(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+            <input id="pw-service" type="text" required placeholder="Service (e.g. GitHub)" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs" />
+            <input id="pw-user" type="text" required placeholder="Username / Email" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs" />
+            <input id="pw-secret" type="password" required placeholder="Password" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs" />
+            <button type="submit" class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer">+ Save Password</button>
+          </form>
+          ${cachedData.passwords.length === 0 ? emptyState('No passwords saved yet.') : `
+          <div class="space-y-3">
+            ${cachedData.passwords.map(p => {
+              const shown = !!revealedPasswords[p.id];
+              return `
+                <div class="p-4 rounded-2xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 class="text-sm font-extrabold text-slate-900">${escapeHtml(p.service_name)}</h3>
+                    <p class="text-xs text-slate-500">${escapeHtml(p.username)}</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <code class="px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-mono text-slate-800">${shown ? escapeHtml(p.encrypted_password) : '••••••••••••'}</code>
+                    <button type="button" onclick="toggleRevealPassword('${p.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 cursor-pointer">${shown ? 'Hide' : 'Show'}</button>
+                    <button type="button" onclick="copyTextToClipboard(\`${escapeHtml(p.encrypted_password)}\`, 'Password copied')" class="px-2.5 py-1.5 rounded-lg bg-purple-100 hover:bg-purple-200 text-xs font-semibold text-purple-800 cursor-pointer">Copy</button>
+                    <button type="button" onclick="deleteRow('vault_passwords', '${p.id}', 'passwords')" class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-xs font-semibold text-rose-700 cursor-pointer">Delete</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>`}
+        `;
+      } else if (tab === 'accounts') {
+        const { data: accs, error } = await supabase.from('vault_accounts').select('*').order('created_at', { ascending: false });
+        if (error) { container.innerHTML = `<p class="text-sm text-rose-600">${escapeHtml(error.message)}</p>`; return; }
+        cachedData.accounts = accs || [];
+
+        container.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900">🏦 My Accounts (${cachedData.accounts.length})</h2>
+              <p class="text-xs text-slate-500 mt-1">Bank and brokerage accounts</p>
+            </div>
+            <a href="https://deriv.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow">📈 Trading Journal ↗</a>
+          </div>
+          <form onsubmit="addAccountEntry(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 p-4 rounded-2xl bg-orange-50/50 border border-orange-100">
+            <input id="acc-inst" type="text" required placeholder="Bank / Broker Name" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs" />
+            <input id="acc-type" type="text" required placeholder="Account ID / Type" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs" />
+            <input id="acc-bal" type="text" placeholder="Balance (e.g. $5,200.00)" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs" />
+            <button type="submit" class="py-2.5 px-4 rounded-xl bg-[#ff7a00] hover:bg-[#e06900] text-white font-bold text-xs cursor-pointer">+ Add Account</button>
+          </form>
+          ${cachedData.accounts.length === 0 ? emptyState('No accounts yet.') : `
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${cachedData.accounts.map(a => `
+              <div class="rounded-2xl border border-slate-200 p-5 bg-white shadow-xs">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">${escapeHtml(a.status || 'Active')}</span>
+                  <span class="text-sm font-extrabold text-slate-900">${escapeHtml(a.balance_display || '')}</span>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900 mt-2">${escapeHtml(a.institution_name)}</h3>
+                <p class="text-xs text-slate-500 mt-1">${escapeHtml(a.account_type)}</p>
+                <div class="mt-3 flex justify-end">
+                  <button type="button" onclick="deleteRow('vault_accounts', '${a.id}', 'accounts')" class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer">Remove</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>`}
+        `;
+      } else if (tab === 'stories') {
+        const { data: stories, error } = await supabase.from('vault_life_stories').select('*').order('created_at', { ascending: false });
+        if (error) { container.innerHTML = `<p class="text-sm text-rose-600">${escapeHtml(error.message)}</p>`; return; }
+        cachedData.stories = stories || [];
+
+        container.innerHTML = `
+          <div class="mb-6">
+            <h2 class="text-2xl font-extrabold text-slate-900">📖 My Life Stories</h2>
+            <p class="text-xs text-slate-500 mt-1">Document your journey and legacy chapters</p>
+          </div>
+          <form onsubmit="addStoryEntry(event)" class="space-y-3 mb-6 p-4 rounded-2xl bg-rose-50/40 border border-rose-100">
+            <input id="story-title" type="text" required placeholder="Chapter Title..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold" />
+            <textarea id="story-content" rows="3" required placeholder="Write your story or reflection..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs"></textarea>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs cursor-pointer">Save Story Chapter</button>
+          </form>
+          ${cachedData.stories.length === 0 ? emptyState('No stories yet.') : `
+          <div class="space-y-4">
+            ${cachedData.stories.map(s => `
+              <div class="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/40">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600">${escapeHtml(s.story_date || new Date(s.created_at).toLocaleDateString())}</span>
+                <h3 class="text-lg font-extrabold text-slate-900 mt-1">${escapeHtml(s.title)}</h3>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed whitespace-pre-wrap">${escapeHtml(s.content)}</p>
+                <div class="mt-3 flex justify-end">
+                  <button type="button" onclick="deleteRow('vault_life_stories', '${s.id}', 'stories')" class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer">Delete</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>`}
+        `;
+      } else if (tab === 'settings') {
+        container.innerHTML = `
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-5">
+              <h2 class="text-2xl font-extrabold text-slate-900 mb-1">⚙️ Vault Settings</h2>
+              <p class="text-xs text-slate-500 mb-6">Update your profile and change your 8-digit PIN</p>
+              <form onsubmit="saveUserSettings(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+                  <input id="set-name" type="text" required value="${escapeHtml(currentProfile?.full_name || '')}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Email (read-only — managed by Supabase Auth)</label>
+                  <input type="email" disabled value="${escapeHtml(currentProfile?.email || '')}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-600" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Set / Change 8-Digit PIN</label>
+                  <input id="set-pin" type="text" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" placeholder="Leave empty to keep current" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tracking-widest" />
+                </div>
+                <button type="submit" class="px-6 py-3 rounded-xl bg-[#1b103f] hover:bg-[#2c1b63] text-white font-bold text-sm cursor-pointer">Save Settings</button>
+              </form>
+            </div>
+            <div class="lg:col-span-7">
+              <h3 class="text-base font-extrabold text-slate-900 mb-2">🔒 Security Info</h3>
+              <div class="rounded-2xl bg-slate-50 border border-slate-200 p-5 text-xs text-slate-600 space-y-2">
+                <p>• All vault data is stored in your Supabase project, protected by Row-Level Security.</p>
+                <p>• Your 8-digit PIN is stored as a bcrypt hash in the <code class="bg-slate-200 px-1 rounded">profiles</code> table via <code class="bg-slate-200 px-1 rounded">set_vault_pin()</code>.</p>
+                <p>• PIN verification happens server-side via <code class="bg-slate-200 px-1 rounded">verify_vault_pin()</code> — the plaintext PIN never leaves the database.</p>
+                <p>• File binaries live in the private <code class="bg-slate-200 px-1 rounded">vault-files</code> Storage bucket. Only the owning user can read/write their folder.</p>
+                <p>• Trading records are not stored here — use the Deriv Trading Journal link.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function formatBytes(b) {
+      if (!b) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let i = 0; while (b >= 1024 && i < units.length - 1) { b /= 1024; i++; }
+      return `${b.toFixed(b >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+    }
+
+    // =========================================================================
+    // CRUD actions
+    // =========================================================================
+    async function deleteFile(id, storagePath) {
+      if (!confirm('Delete this file permanently?')) return;
+      await supabase.storage.from('vault-files').remove([storagePath]);
+      const { error } = await supabase.from('vault_files').delete().eq('id', id);
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('File deleted.');
+      await refreshDashboardUI();
+      await renderSubpage('files');
+    }
+
+    async function downloadFile(id) {
+      const f = cachedData.files.find(x => x.id === id);
+      if (!f) return;
+      const { data, error } = await supabase.storage.from('vault-files').createSignedUrl(f.storage_path, 60);
+      if (error) { showToast(error.message, 'error'); return; }
+      window.open(data.signedUrl, '_blank');
+    }
+
+    async function deleteRow(table, id, tab) {
+      if (!confirm('Delete this item?')) return;
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Deleted.');
+      await refreshDashboardUI();
+      await renderSubpage(tab);
+    }
+
+    async function addPasswordEntry(e) {
+      e.preventDefault();
+      if (!currentSession?.user) return;
+      const service_name = document.getElementById('pw-service').value.trim();
+      const username = document.getElementById('pw-user').value.trim();
+      const encrypted_password = document.getElementById('pw-secret').value;
+      const { error } = await supabase.from('vault_passwords').insert({
+        user_id: currentSession.user.id, service_name, username, encrypted_password
+      });
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Password saved.');
+      await refreshDashboardUI();
+      await renderSubpage('passwords');
+    }
+
+    function toggleRevealPassword(id) {
+      revealedPasswords[id] = !revealedPasswords[id];
+      renderSubpage('passwords');
+    }
+
+    async function addAccountEntry(e) {
+      e.preventDefault();
+      if (!currentSession?.user) return;
+      const institution_name = document.getElementById('acc-inst').value.trim();
+      const account_type = document.getElementById('acc-type').value.trim();
+      const balance_display = document.getElementById('acc-bal').value.trim() || '';
+      const { error } = await supabase.from('vault_accounts').insert({
+        user_id: currentSession.user.id, institution_name, account_type, balance_display, status: 'Active'
+      });
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Account added.');
+      await refreshDashboardUI();
+      await renderSubpage('accounts');
+    }
+
+    async function addStoryEntry(e) {
+      e.preventDefault();
+      if (!currentSession?.user) return;
+      const title = document.getElementById('story-title').value.trim();
+      const content = document.getElementById('story-content').value.trim();
+      const { error } = await supabase.from('vault_life_stories').insert({
+        user_id: currentSession.user.id, title, content, story_date: new Date().toLocaleDateString()
+      });
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Story saved.');
+      await renderSubpage('stories');
+    }
+
+    async function saveUserSettings(e) {
+      e.preventDefault();
+      if (!currentProfile) return;
+      const name = document.getElementById('set-name').value.trim();
+      const pin = document.getElementById('set-pin').value.replace(/\D/g, '');
+
+      const { error: profileErr } = await supabase.from('profiles').update({ full_name: name }).eq('id', currentProfile.id);
+      if (profileErr) { showToast(profileErr.message, 'error'); return; }
+      currentProfile.full_name = name;
+
+      if (pin) {
+        if (pin.length !== 8) { showToast('PIN must be exactly 8 digits.', 'error'); return; }
+        const { error: pinErr } = await supabase.rpc('set_vault_pin', { raw_pin: pin });
+        if (pinErr) { showToast(pinErr.message, 'error'); return; }
+      }
+
+      showToast('Settings saved.');
+      await refreshDashboardUI();
+      await renderSubpage('settings');
+    }
+
+    // =========================================================================
+    // SESSION BOOTSTRAP
+    // =========================================================================
+    (async function init() {
+      // Check for existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        currentSession = session;
+        await ensureProfile();
+        // Need PIN to unlock
+        switchAuthScreen('pin');
+        pinMode = 'login';
+        document.getElementById('auth-wrapper').classList.remove('hidden');
+      } else {
+        switchAuthScreen('choice');
+      }
+
+      // Listen for auth changes (email confirmation etc.)
+      supabase.auth.onAuthStateChange(async (_event, session) => {
+        currentSession = session;
+        if (session) await ensureProfile();
+      });
+    })();
+  </script>
+</body>
+</html>
